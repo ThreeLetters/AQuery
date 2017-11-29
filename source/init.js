@@ -1,9 +1,11 @@
 var elementMethods = {},
     queryMethods = {},
-    selectCache = [],
+    AQueryMethods = {},
+    selectCache = {},
     elementCache = {},
     refrenceListeners = [],
-    nodeId = 0;
+    nodeId = 0,
+    AQuery;
 
 function createId() {
     return 'aquery_id_' + nodeId++;

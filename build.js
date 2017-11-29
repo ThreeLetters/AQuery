@@ -206,6 +206,6 @@ fs.writeFileSync(__dirname + '/dist/AQuery.js', top + out)
 
 compile(out, function (compiled) {
     fs.writeFileSync(__dirname + '/dist/AQuery.min.js', top + compiled)
-})
+    console.log("Compiled " + files.length + " files")
 
-console.log("Compiled " + files.length + " files")
+})

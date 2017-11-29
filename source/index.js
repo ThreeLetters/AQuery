@@ -1,4 +1,4 @@
-var AQuery = new Proxy(function (selector) {
+AQuery = new Proxy(function (selector) {
     if (!selector) return;
     else if (typeof selector === 'string') {
         var elements = select(selector);
@@ -8,6 +8,9 @@ var AQuery = new Proxy(function (selector) {
     }
 }, {
     get: function (target, name) {
+        if (AQueryMethods[name]) {
+            return AQueryMethods[name](name)
+        } else
         if (selectCache[name]) {
             return selectCache[name];
         }
