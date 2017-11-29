@@ -7,7 +7,7 @@
 </head>
 
 <body>
-    <div id='test'>
+    <div class='clickclass' id='test'>
 
     </div>
 
@@ -16,10 +16,9 @@
         el.style.backgroundColor = 'blue';
         el.style.width = el.style.height = '100px'
 
-        el.addEventListener('on', function() {
-
+        $('.clickclass').$on('click', function() {
+            console.log('clicked')
         })
-
     </script>
 </body>
 

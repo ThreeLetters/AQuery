@@ -68,10 +68,11 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
     if (type === 'delete') {
         queryData.listeners.forEach((listener) => {
             queryData.wrappers.forEach((wrap) => {
-                var index = wrap.listeners.indexOf(listener);
+                var data = wrap.elementData;
+                var index = data.listeners.indexOf(listener);
                 if (index !== -1) {
-                    wrap.listeners.splice(index, 1)
-                    wrap.current.removeEventListener(listener.type, listener.listener)
+                    data.listeners.splice(index, 1)
+                    data.current.removeEventListener(listener.type, listener.listener)
                 }
             })
         })
@@ -87,9 +88,10 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
             if (queryData.listeners.indexOf(listenerData) === -1)
                 queryData.listeners.push(listenerData)
             queryData.nodes.forEach((node, i) => {
-                if (queryData.wrappers[i].listeners.indexOf(listenerData) !== -1) return;
+                var data = queryData.wrappers[i].elementData;
+                if (data.listeners.indexOf(listenerData) !== -1) return;
                 node.addEventListener(type, listener, options)
-                queryData.wrappers[i].listeners.push(listenerData)
+                data.listeners.push(listenerData)
             });
             if (refrence && refrenceListeners.indexOf(listenerData) === -1) refrenceListeners.push(listenerData);
         }, {

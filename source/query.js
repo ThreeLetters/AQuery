@@ -6,7 +6,6 @@ function Query(nodes, selector) {
         selectorSplit: selector.split(/[> ]/),
         listeners: []
     }
-
     nodes.forEach((node, i) => {
         object.wrappers[i] = wrapElement(node);
     })

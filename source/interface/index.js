@@ -43,9 +43,9 @@ function proxy(parent, current, name) {
                     };
                     return bindings[name];
                 }
-            } else if (iselement) {
+            } else if (iselement && elementMethods[name]) {
                 return elementMethods[name](data, false, 'get')
-            } else if (current[name] && elementMethods[name]) {
+            } else if (current[name]) {
                 if (typeof current[name] === 'object') return proxy(current, current[name], name);
                 else return current[name];
             }
