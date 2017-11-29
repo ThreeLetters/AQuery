@@ -43,6 +43,53 @@ if (!Element.prototype.matches) {
             return i > -1;
         };
 }
+var minirequest = function ( /**/ ) {
+    var url = arguments[0],
+        post = undefined,
+        callback,
+        bust = false;
+
+    if (arguments[2]) { // post
+        post = arguments[1];
+        callback = arguments[2];
+        bust = arguments[3];
+    } else {
+        callback = arguments[1];
+        bust = arguments[2];
+    }
+    try {
+        var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP"); // IE support
+        xhr.open(post ? 'POST' : 'GET', url + (bust ? ("?" + Date.now()) : ""));
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4) {
+                if (xhr.status === 200) {
+                    callback(undefined, xhr, xhr.responseText);
+                } else {
+                    callback(true, xhr, false);
+                }
+
+                var body = xhr.responseText;
+                var res = xhr
+            }
+        };
+        if (post) {
+            xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+            var toPost = [];
+            for (var i in post) {
+                toPost.push(encodeURIComponent(i) + '=' + encodeURIComponent(post[i]))
+            }
+
+            post = toPost.join("&")
+        }
+
+        xhr.send(post);
+    } catch (e) {
+        callback(e);
+    }
+}
+
+
 /*
 Modified derivative of Ajax (https://github.com/ForbesLindesay/ajax)
 
@@ -80,7 +127,10 @@ var jsonpID = 0,
     htmlType = 'text/html',
     blankRE = /^\s*$/
 
-var ajax = AQueryMethods.ajax = function (options) {
+var ajax = function (options, useMini) {
+    if (useMini) {
+        return minirequest.apply(null, arguments)
+    }
     var settings = extend({}, options || {})
     for (key in ajax.settings)
         if (settings[key] === undefined) settings[key] = ajax.settings[key]
@@ -379,6 +429,10 @@ function extend(target) {
     })
     return target
 }
+
+AQueryMethods.ajax = function () {
+    return ajax;
+}
 elementMethods.append = elementMethods.appendChild = function (elementData, refrence) {
 
     return function (child) {
@@ -396,9 +450,31 @@ elementMethods.append = elementMethods.appendChild = function (elementData, refr
     }
 
 }
-elementMethods.clone = function (elementData, refrence) {
-    return function () {
 
+AQueryMethods.append = AQueryMethods.appendChild = function () {
+    return function (child) {
+        if (!child.elementData) {
+            child = wrapElement(child);
+        }
+        var data = child.elementData;
+        refrenceListeners.forEach((listener) => {
+            if (data.current.matches(listener.selector) && data.listeners.indexOf(listener) === -1) {
+                data.current.addEventListener(listener.type, listener.listener, listener.options)
+                data.listeners.push(listener);
+            }
+        });
+        document.body.appendChild(data.current);
+    }
+}
+elementMethods.clone = function (elementData, refrence) {
+    return function (cloneEvents) {
+        var clone = elementData.current.cloneNode(true);
+        var wrap = AQuery(clone);
+        if (cloneEvents !== false) elementData.listeners.forEach((listener) => {
+            wrap.elementData.listeners.push(listener);
+            wrap.elementData.current.addEventListener(listener.type, listener.listener, listener.options)
+        });
+        return wrap;
     }
 }
 elementMethods.on = elementMethods.addEventListener = function (elementData, refrence, type) {
