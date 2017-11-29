@@ -93,7 +93,7 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                 node.addEventListener(type, listener, options)
                 data.listeners.push(listenerData)
             });
-            if (refrence && refrenceListeners.indexOf(listenerData) === -1) refrenceListeners.push(listenerData);
+            if (refrence && !listenerData.isRefrenceEvent) refrenceListeners.push(listenerData), listenerData.isRefrenceEvent = true;
         }, {
             get: function (target, name) {
                 if (name === 'length') {
@@ -116,7 +116,11 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                                 newList.splice(name, 1);
                                 var ind = queryData.listeners.indexOf(l);
                                 if (l !== -1) queryData.listeners.splice(ind, 1);
-
+                                if (l.isRefrenceEvent) {
+                                    var ind = refrenceListeners.indexOf(l);
+                                    refrenceListeners.splice(ind, 1);
+                                    l.isRefrenceEvent = false;
+                                }
                                 queryData.wrappers.forEach((wrap) => {
                                     var data = wrap.elementData;
                                     var index = data.listeners.indexOf(l);
@@ -135,6 +139,11 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                     var l = queryData.listeners[name];
                     if (!l) return;
                     queryData.listeners.splice(name, 1);
+                    if (l.isRefrenceEvent) {
+                        var ind = refrenceListeners.indexOf(l);
+                        refrenceListeners.splice(ind, 1);
+                        l.isRefrenceEvent = false;
+                    }
                     queryData.wrappers.forEach((wrap) => {
                         var data = wrap.elementData;
                         var index = data.listeners.indexOf(l);
@@ -144,8 +153,13 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                         }
                     })
                 } else {
-                    elementData.listeners = elementData.listeners.filter((l) => {
+                    queryData.listeners = queryData.listeners.filter((l) => {
                         if (l.type === name) {
+                            if (l.isRefrenceEvent) {
+                                var ind = refrenceListeners.indexOf(l);
+                                refrenceListeners.splice(ind, 1);
+                                l.isRefrenceEvent = false;
+                            }
                             elementData.current.removeEventListener(l.type, l.listener)
                             queryData.wrappers.forEach((wrap) => {
                                 var data = wrap.elementData;
