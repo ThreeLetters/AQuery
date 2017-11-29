@@ -1,3 +1,13 @@
+function wrapElement(element) {
+    if (!element.id) {
+        element.id = createId()
+    }
+    if (!elementCache[element.id]) {
+        elementCache[element.id] = proxy(null, element, null, null)
+    }
+    return elementCache[element.id];
+}
+
 function proxy(parent, current, name, parentBindings) {
     var bindings = {};
     var data = {
@@ -8,11 +18,15 @@ function proxy(parent, current, name, parentBindings) {
         name: name
     }
     var type = typeof current;
+    var iselement = type === 'object' && isElement(current);
     return new Proxy(current, {
         get: function (target, name) {
+            if (name === 'elementData') {
+                return data;
+            } else
             if (name.charAt(0) === '$') {
                 name = name.substr(1);
-                if (type === 'object' && elementMethods[name]) {
+                if (iselement && elementMethods[name]) {
                     return elementMethods[name](data, true)
                 } else {
                     if (!bindings[name]) bindings[name] = {
@@ -29,8 +43,8 @@ function proxy(parent, current, name, parentBindings) {
                     };
                     return bindings[name];
                 }
-            } else if (type === 'object' && elementMethods[name]) {
-                return elementMethods[name](data, true)
+            } else if (iselement) {
+                return elementMethods[name](data, false)
             } else if (current[name]) {
                 if (typeof current[name] === 'object') return proxy(current, current[name], name, bindings);
                 else return current[name];

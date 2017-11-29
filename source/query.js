@@ -1,17 +1,15 @@
 function Query(nodes, selector) {
     var object = {
         nodes: nodes,
-        wrapperCache: [],
-        selector: selector
+        selector: selector,
+        selectorSplit: selector.split(/[> ]/)
     }
 
     return new Proxy(object, {
         get: function (target, name) {
             if (name === 'length') return nodes.length;
             else if (typeof name === 'number' && object.nodes[name]) {
-                if (!object.wrapperCache[name])
-                    object.wrapperCache[name] = proxy(null, object.nodes[name], null, null)
-                return object.wrapperCache[name];
+                return wrapElement(object.nodes[name]);
             }
             var refrence = false;
             if (name.charAt(0) === '$') {

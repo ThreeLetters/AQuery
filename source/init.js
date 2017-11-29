@@ -1,0 +1,32 @@
+var elementMethods = {},
+    queryMethods = {},
+    selectCache = [],
+    elementCache = {},
+    refrenceListeners = [],
+    nodeId = 0;
+
+function createId() {
+    return 'aquery_id_' + nodeId++;
+}
+
+function isElement(o) {
+    return (
+        typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
+        o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName === "string"
+    );
+}
+
+if (!Element.prototype.matches) {
+    Element.prototype.matches =
+        Element.prototype.matchesSelector ||
+        Element.prototype.mozMatchesSelector ||
+        Element.prototype.msMatchesSelector ||
+        Element.prototype.oMatchesSelector ||
+        Element.prototype.webkitMatchesSelector ||
+        function (s) {
+            var matches = (this.document || this.ownerDocument).querySelectorAll(s),
+                i = matches.length;
+            while (--i >= 0 && matches.item(i) !== this) {}
+            return i > -1;
+        };
+}

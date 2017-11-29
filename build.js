@@ -1,5 +1,5 @@
 var files = [
-    'methods/index.js',
+    'init.js',
     'methods/*.js',
     'interface/index.js',
     'query.js',

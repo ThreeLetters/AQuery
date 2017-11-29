@@ -1,10 +1,10 @@
-var selectCache = {};
-
 var AQuery = new Proxy(function (selector) {
     if (!selector) return;
     else if (typeof selector === 'string') {
         var elements = select(selector);
         return Query(elements, selector)
+    } else if (typeof selector === 'object') {
+        return wrapElement(selector);
     }
 }, {
     get: function (target, name) {

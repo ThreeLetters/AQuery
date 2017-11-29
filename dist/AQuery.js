@@ -10,7 +10,91 @@
 
 (function (window) {
 var elementMethods = {},
-    queryMethods = {};
+    queryMethods = {},
+    selectCache = [],
+    elementCache = {},
+    refrenceListeners = [],
+    nodeId = 0;
+
+function createId() {
+    return 'aquery_id_' + nodeId++;
+}
+
+function isElement(o) {
+    return (
+        typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
+        o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName === "string"
+    );
+}
+
+if (!Element.prototype.matches) {
+    Element.prototype.matches =
+        Element.prototype.matchesSelector ||
+        Element.prototype.mozMatchesSelector ||
+        Element.prototype.msMatchesSelector ||
+        Element.prototype.oMatchesSelector ||
+        Element.prototype.webkitMatchesSelector ||
+        function (s) {
+            var matches = (this.document || this.ownerDocument).querySelectorAll(s),
+                i = matches.length;
+            while (--i >= 0 && matches.item(i) !== this) {}
+            return i > -1;
+        };
+}
+elementMethods.append = elementMethods.appendChild = function (elementData, refrence) {
+
+    return function (child) {
+        if (child.elementData) {
+            child = child.elementData.current;
+        }
+        refrenceListeners.forEach((listener) => {
+            if (child.matches(listener.selector)) {
+                child.addEventListener(listener.type, listener.listener, listener.options)
+            }
+        })
+        elementData.current.appendChild(child);
+    }
+
+}
+elementMethods.on = elementMethods.addEventListener = function (elementData, refrence) {
+
+    return function (type, listener, options) {
+        elementData.current.addEventListener(type, listener, options)
+    }
+
+}
+
+queryMethods.on = queryMethods.addEventListener = function (queryData, refrence) {
+    if (refrence) {
+        return function (type, listener, options) {
+            queryData.nodes.forEach((node) => {
+                node.addEventListener(type, listener, options)
+            });
+            refrenceListeners.push({
+                selector: queryData.selector,
+                type: type,
+                listener: listener,
+                options: options
+            })
+        }
+    } else {
+        return function (type, listener, options) {
+            queryData.nodes.forEach((node) => {
+                node.addEventListener(type, listener, options)
+            })
+        }
+    }
+}
+function wrapElement(element) {
+    if (!element.id) {
+        element.id = createId()
+    }
+    if (!elementCache[element.id]) {
+        elementCache[element.id] = proxy(null, element, null, null)
+    }
+    return elementCache[element.id];
+}
+
 function proxy(parent, current, name, parentBindings) {
     var bindings = {};
     var data = {
@@ -21,11 +105,15 @@ function proxy(parent, current, name, parentBindings) {
         name: name
     }
     var type = typeof current;
+    var iselement = type === 'object' && isElement(current);
     return new Proxy(current, {
         get: function (target, name) {
+            if (name === 'elementData') {
+                return data;
+            } else
             if (name.charAt(0) === '$') {
                 name = name.substr(1);
-                if (type === 'object' && elementMethods[name]) {
+                if (iselement && elementMethods[name]) {
                     return elementMethods[name](data, true)
                 } else {
                     if (!bindings[name]) bindings[name] = {
@@ -42,8 +130,8 @@ function proxy(parent, current, name, parentBindings) {
                     };
                     return bindings[name];
                 }
-            } else if (type === 'object' && elementMethods[name]) {
-                return elementMethods[name](data, true)
+            } else if (iselement) {
+                return elementMethods[name](data, false)
             } else if (current[name]) {
                 if (typeof current[name] === 'object') return proxy(current, current[name], name, bindings);
                 else return current[name];
@@ -97,17 +185,15 @@ function proxy(parent, current, name, parentBindings) {
 function Query(nodes, selector) {
     var object = {
         nodes: nodes,
-        wrapperCache: [],
-        selector: selector
+        selector: selector,
+        selectorSplit: selector.split(/[> ]/)
     }
 
     return new Proxy(object, {
         get: function (target, name) {
             if (name === 'length') return nodes.length;
             else if (typeof name === 'number' && object.nodes[name]) {
-                if (!object.wrapperCache[name])
-                    object.wrapperCache[name] = proxy(null, object.nodes[name], null, null)
-                return object.wrapperCache[name];
+                return wrapElement(object.nodes[name]);
             }
             var refrence = false;
             if (name.charAt(0) === '$') {
@@ -122,13 +208,13 @@ function Query(nodes, selector) {
         }
     })
 }
-var selectCache = {};
-
 var AQuery = new Proxy(function (selector) {
     if (!selector) return;
     else if (typeof selector === 'string') {
         var elements = select(selector);
         return Query(elements, selector)
+    } else if (typeof selector === 'object') {
+        return wrapElement(selector);
     }
 }, {
     get: function (target, name) {
