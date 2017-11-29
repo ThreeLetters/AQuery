@@ -1,8 +1,10 @@
 var files = [
     'init.js',
     'methods/*.js',
-    'interface/index.js',
-    'query.js',
+    'interface/proxyObject.js',
+    'interface/elementWrapper.js',
+    'interface/queryWrapper.js',
+    'interface/mainInterface.js',
     'index.js',
 ];
 
@@ -170,7 +172,7 @@ var fs = require('fs');
 files = Glob(files.map((f) => {
     return __dirname + '/source/' + f;
 })).filter((v, i, a) => a.indexOf(v) === i).map((file) => {
-    return fs.readFileSync(file, 'utf8');
+    return '// ' + file.replace(__dirname + '/source/', '') + '\n' + fs.readFileSync(file, 'utf8');
 });
 
 var out = '(function (window) {\n' + files.join('') + '})(window)';
@@ -207,5 +209,4 @@ fs.writeFileSync(__dirname + '/dist/AQuery.js', top + out)
 compile(out, function (compiled) {
     fs.writeFileSync(__dirname + '/dist/AQuery.min.js', top + compiled)
     console.log("Compiled " + files.length + " files")
-
 })

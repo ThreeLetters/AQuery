@@ -9,6 +9,7 @@
 */
 
 (function (window) {
+// init.js
 var elementMethods = {},
     queryMethods = {},
     AQueryMethods = {},
@@ -43,6 +44,7 @@ if (!Element.prototype.matches) {
             return i > -1;
         };
 }
+// methods/ajax.js
 var minirequest = function ( /**/ ) {
     var url = arguments[0],
         post = undefined,
@@ -113,8 +115,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-
-
 
 var jsonpID = 0,
     document = window.document,
@@ -433,6 +433,9 @@ function extend(target) {
 AQueryMethods.ajax = function () {
     return ajax;
 }
+// methods/animate.js
+
+// methods/append.js
 elementMethods.append = elementMethods.appendChild = function (elementData, refrence) {
 
     return function (child) {
@@ -466,6 +469,7 @@ AQueryMethods.append = AQueryMethods.appendChild = function () {
         document.body.appendChild(data.current);
     }
 }
+// methods/clone.js
 elementMethods.clone = function (elementData, refrence) {
     return function (cloneEvents) {
         var clone = elementData.current.cloneNode(true);
@@ -477,6 +481,7 @@ elementMethods.clone = function (elementData, refrence) {
         return wrap;
     }
 }
+// methods/events.js
 elementMethods.on = elementMethods.addEventListener = function (elementData, refrence, type) {
     if (type === 'delete') {
         elementData.listeners.forEach((listener) => {
@@ -657,16 +662,10 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
         })
     }
 }
-function wrapElement(element) {
-    if (!element.id) {
-        element.id = createId()
-    }
-    if (!elementCache[element.id]) {
-        elementCache[element.id] = proxy(null, element, null)
-    }
-    return elementCache[element.id];
-}
-
+// methods/scroll.js
+// methods/serialize.js
+// methods/visibility.js
+// interface/proxyObject.js
 function proxy(parent, current, name) {
     var bindings = {};
     var data = {
@@ -765,6 +764,17 @@ function proxy(parent, current, name) {
         }
     })
 }
+// interface/elementWrapper.js
+function wrapElement(element) {
+    if (!element.id) {
+        element.id = createId()
+    }
+    if (!elementCache[element.id]) {
+        elementCache[element.id] = proxy(null, element, null)
+    }
+    return elementCache[element.id];
+}
+// interface/queryWrapper.js
 function Query(nodes, selector) {
     var object = {
         nodes: nodes,
@@ -796,33 +806,58 @@ function Query(nodes, selector) {
         }
     })
 }
-AQuery = new Proxy(function (selector) {
-    if (!selector) return;
-    else if (typeof selector === 'string') {
-        var elements = select(selector);
-        return Query(elements, selector)
-    } else if (typeof selector === 'object') {
-        return wrapElement(selector);
-    }
-}, {
-    get: function (target, name) {
-        if (AQueryMethods[name]) {
-            return AQueryMethods[name](name)
-        } else
-        if (selectCache[name]) {
-            return selectCache[name];
+// interface/mainInterface.js
+function createMain() {
+    return new Proxy(function (selector) {
+        if (!selector) return;
+        else if (typeof selector === 'string') {
+            var elements = select(selector);
+            return Query(elements, selector)
+        } else if (typeof selector === 'object') {
+            return wrapElement(selector);
         }
-    },
-    set: function (target, name, value) {
-
-    }
-});
-
+    }, {
+        get: function (target, name) {
+            var refrence = false;
+            if (name.charAt(0) === '$') {
+                refrence = true;
+                name = name.substr(1)
+            }
+            if (AQueryMethods[name]) {
+                return AQueryMethods[name](refrence, 'get')
+            } else
+            if (selectCache[name]) {
+                return selectCache[name];
+            }
+        },
+        set: function (target, name, value) {
+            var refrence = false;
+            if (name.charAt(0) === '$') {
+                refrence = true;
+                name = name.substr(1)
+            }
+            if (AQueryMethods[name]) {
+                return AQueryMethods[name](refrence, 'set', value)
+            }
+        },
+        deleteProperty: function (target, name) {
+            var refrence = false;
+            if (name.charAt(0) === '$') {
+                refrence = true;
+                name = name.substr(1)
+            }
+            if (AQueryMethods[name]) {
+                return AQueryMethods[name](refrence, 'delete', value)
+            }
+        }
+    });
+}
 
 function select(selector) {
     return Array.from(document.querySelectorAll(selector));
 }
-
+// index.js
+AQuery = createMain();
 window.AQuery = AQuery
 if (!window.$) {
     window.$ = window.AQuery;
