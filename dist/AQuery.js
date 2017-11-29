@@ -403,33 +403,91 @@ elementMethods.clone = function (elementData, refrence) {
 }
 elementMethods.on = elementMethods.addEventListener = function (elementData, refrence) {
 
-    return function (type, listener, options) {
+    return new Proxy(function (type, listener, options) {
         listener._listenerData = listener._listenerData || {
             type: type,
             listener: listener,
             options: options
         }
-        elementData.current.addEventListener(type, listener, options)
-        elementData.listeners.push(listener._listenerData)
-    }
+        if (elementData.listeners.indexOf(listener._listenerData) === -1) {
+            elementData.current.addEventListener(type, listener, options)
+            elementData.listeners.push(listener._listenerData)
+        }
+    }, {
+        get: function (target, name) {
+            if (name === 'length') {
+                return elementData.listeners.length;
+            } else
+            if (typeof name === 'number') {
+                return elementData.listeners[name].listener;
+            } else {
+                var newList = []
+                elementData.listeners.forEach((l) => {
+                    if (l.type === name) {
+                        newList.push(l.listener);
+                    }
+                })
+                return new Proxy(newList, {
+                    deleteProperty: function (target, name) {
+                        if (typeof name === 'number') {
+                            var l = newList[name];
+                            if (!l) return;
+                            newList.splice(name, 1);
+                            var ind = elementData.listeners.indexOf(l);
+                            if (l !== -1) elementData.listeners.splice(ind, 1);
+                            elementData.current.removeEventListener(l.type, l.listener)
+                        }
+                    }
+                });
+            }
+        },
+        deleteProperty: function (target, name) {
+            if (typeof name === 'number') {
+                var l = elementData.listeners[name];
+                if (!l) return;
+                elementData.listeners.splice(name, 1);
+                elementData.current.removeEventListener(l.type, l.listener)
+            } else {
+                elementData.listeners = elementData.listeners.filter((l) => {
+                    if (l.type === name) {
+                        elementData.current.removeEventListener(l.type, l.listener)
+                        return false;
+                    }
+                    return true;
+                })
+            }
+        }
+    })
 
 }
 
 queryMethods.on = queryMethods.addEventListener = function (queryData, refrence) {
 
-    return function (type, listener, options) {
+    return new Proxy(function (type, listener, options) {
         var listenerData = listener._listenerData = listener._listenerData || {
             selector: queryData.selector,
             type: type,
             listener: listener,
             options: options
         }
+        if (queryData.listeners.indexOf(listenerData) === -1)
+            queryData.listeners.push(listenerData)
         queryData.nodes.forEach((node, i) => {
+            if (queryData.wrappers[i].listeners.indexOf(listenerData) !== -1) return;
             node.addEventListener(type, listener, options)
             queryData.wrappers[i].listeners.push(listenerData)
         });
-        if (refrence) refrenceListeners.push(listenerData);
-    }
+        if (refrence && refrenceListeners.indexOf(listenerData) === -1) refrenceListeners.push(listenerData);
+    }, {
+        get: function (target, name) {
+            if (name === 'length') {
+                return queryData.listeners.length;
+            } else
+            if (typeof name === 'number') {
+                return queryData.listeners[name].listener;
+            }
+        }
+    })
 }
 function wrapElement(element) {
     if (!element.id) {
@@ -460,7 +518,7 @@ function proxy(parent, current, name) {
             if (name.charAt(0) === '$') {
                 name = name.substr(1);
                 if (iselement && elementMethods[name]) {
-                    return elementMethods[name](data, true)
+                    return elementMethods[name](data, true, 'get')
                 } else {
                     if (!bindings[name]) bindings[name] = {
                         isRefrence: true,
@@ -477,31 +535,36 @@ function proxy(parent, current, name) {
                     return bindings[name];
                 }
             } else if (iselement) {
-                return elementMethods[name](data, false)
-            } else if (current[name]) {
+                return elementMethods[name](data, false, 'get')
+            } else if (current[name] && elementMethods[name]) {
                 if (typeof current[name] === 'object') return proxy(current, current[name], name);
                 else return current[name];
             }
         },
         set: function (target, name, value) {
-            if (name.charAt(0) === '$') name = name.substr(1);
+            var refrence = false;
+            if (name.charAt(0) === '$') name = name.substr(1), refrence = true;
 
-            if (value && value.isRefrence) {
-                if (bindings[name] !== value) {
-                    if (bindings[name]) {
-                        var ind = bindings[name].attached.indexOf(data);
-                        bindings[name].attached[ind] = bindings[name].attached[bindings[name].attached.length - 1]
-                        bindings[name].attached[ind].pop();
-                    }
-                    value.attached.push(data);
-                    current[name] = value.owner[value.name]
-                    bindings[name] = value;
-                }
+            if (iselement && elementMethods[name]) {
+                elementMethods[name](data, true, 'set', value)
             } else {
-                if (bindings[name]) {
-                    bindings[name].update(value)
+                if (value && value.isRefrence) {
+                    if (bindings[name] !== value) {
+                        if (bindings[name]) {
+                            var ind = bindings[name].attached.indexOf(data);
+                            bindings[name].attached[ind] = bindings[name].attached[bindings[name].attached.length - 1]
+                            bindings[name].attached[ind].pop();
+                        }
+                        value.attached.push(data);
+                        current[name] = value.owner[value.name]
+                        bindings[name] = value;
+                    }
                 } else {
-                    current[name] = value;
+                    if (bindings[name]) {
+                        bindings[name].update(value)
+                    } else {
+                        current[name] = value;
+                    }
                 }
             }
         },
@@ -511,19 +574,25 @@ function proxy(parent, current, name) {
         deleteProperty: function (target, name) {
             if (name.charAt(0) === '$') {
                 name = name.substr(1);
-                if (bindings[name]) {
-                    if (bindings[name].owner === current) {
-                        bindings[name].attached.forEach((att) => {
-                            att.bindings[name] = null;
-                        })
-                        bindings[name].attached = null;
-                    } else {
-                        var ind = bindings[name].attached.indexOf(data);
-                        bindings[name].attached[ind] = bindings[name].attached[bindings[name].attached.length - 1]
-                        bindings[name].attached[ind].pop();
+                if (iselement && elementMethods[name]) {
+                    elementMethods[name](data, true, 'delete')
+                } else {
+                    if (bindings[name]) {
+                        if (bindings[name].owner === current) {
+                            bindings[name].attached.forEach((att) => {
+                                att.bindings[name] = null;
+                            })
+                            bindings[name].attached = null;
+                        } else {
+                            var ind = bindings[name].attached.indexOf(data);
+                            bindings[name].attached[ind] = bindings[name].attached[bindings[name].attached.length - 1]
+                            bindings[name].attached[ind].pop();
+                        }
+                        bindings[name] = null;
                     }
-                    bindings[name] = null;
                 }
+            } else if (iselement && elementMethods[name]) {
+                elementMethods[name](data, false, 'delete')
             }
         }
     })
@@ -533,7 +602,8 @@ function Query(nodes, selector) {
         nodes: nodes,
         wrappers: [],
         selector: selector,
-        selectorSplit: selector.split(/[> ]/)
+        selectorSplit: selector.split(/[> ]/),
+        listeners: []
     }
 
     nodes.forEach((node, i) => {

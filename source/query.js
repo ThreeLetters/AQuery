@@ -3,7 +3,8 @@ function Query(nodes, selector) {
         nodes: nodes,
         wrappers: [],
         selector: selector,
-        selectorSplit: selector.split(/[> ]/)
+        selectorSplit: selector.split(/[> ]/),
+        listeners: []
     }
 
     nodes.forEach((node, i) => {
