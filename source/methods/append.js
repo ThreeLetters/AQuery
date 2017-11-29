@@ -1,15 +1,17 @@
 elementMethods.append = elementMethods.appendChild = function (elementData, refrence) {
 
     return function (child) {
-        if (child.elementData) {
-            child = child.elementData.current;
+        if (!child.elementData) {
+            child = wrapElement(child);
         }
+        var data = child.elementData;
         refrenceListeners.forEach((listener) => {
-            if (child.matches(listener.selector)) {
-                child.addEventListener(listener.type, listener.listener, listener.options)
+            if (data.current.matches(listener.selector) && data.listeners.indexOf(listener) === -1) {
+                data.current.addEventListener(listener.type, listener.listener, listener.options)
+                data.listeners.push(listener);
             }
         })
-        elementData.current.appendChild(child);
+        elementData.current.appendChild(data.current);
     }
 
 }

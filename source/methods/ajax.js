@@ -35,7 +35,7 @@ var jsonpID = 0,
     htmlType = 'text/html',
     blankRE = /^\s*$/
 
-AQueryMethods.ajax = function (options) {
+var ajax = AQueryMethods.ajax = function (options) {
     var settings = extend({}, options || {})
     for (key in ajax.settings)
         if (settings[key] === undefined) settings[key] = ajax.settings[key]

@@ -5,7 +5,7 @@
  License: MIT (https://github.com/ThreeLetters/AQuery/blob/master/LICENSE)
  Source: https://github.com/ThreeLetters/AQuery
  Build: v0.0.1
- Built on: 28/11/2017
+ Built on: 29/11/2017
 */
 
 (function (window) {
@@ -80,7 +80,7 @@ var jsonpID = 0,
     htmlType = 'text/html',
     blankRE = /^\s*$/
 
-AQueryMethods.ajax = function (options) {
+var ajax = AQueryMethods.ajax = function (options) {
     var settings = extend({}, options || {})
     for (key in ajax.settings)
         if (settings[key] === undefined) settings[key] = ajax.settings[key]
@@ -382,45 +382,53 @@ function extend(target) {
 elementMethods.append = elementMethods.appendChild = function (elementData, refrence) {
 
     return function (child) {
-        if (child.elementData) {
-            child = child.elementData.current;
+        if (!child.elementData) {
+            child = wrapElement(child);
         }
+        var data = child.elementData;
         refrenceListeners.forEach((listener) => {
-            if (child.matches(listener.selector)) {
-                child.addEventListener(listener.type, listener.listener, listener.options)
+            if (data.current.matches(listener.selector) && data.listeners.indexOf(listener) === -1) {
+                data.current.addEventListener(listener.type, listener.listener, listener.options)
+                data.listeners.push(listener);
             }
         })
-        elementData.current.appendChild(child);
+        elementData.current.appendChild(data.current);
     }
 
+}
+elementMethods.clone = function (elementData, refrence) {
+    return function () {
+
+    }
 }
 elementMethods.on = elementMethods.addEventListener = function (elementData, refrence) {
 
     return function (type, listener, options) {
+        listener._listenerData = listener._listenerData || {
+            type: type,
+            listener: listener,
+            options: options
+        }
         elementData.current.addEventListener(type, listener, options)
+        elementData.listeners.push(listener._listenerData)
     }
 
 }
 
 queryMethods.on = queryMethods.addEventListener = function (queryData, refrence) {
-    if (refrence) {
-        return function (type, listener, options) {
-            queryData.nodes.forEach((node) => {
-                node.addEventListener(type, listener, options)
-            });
-            refrenceListeners.push({
-                selector: queryData.selector,
-                type: type,
-                listener: listener,
-                options: options
-            })
+
+    return function (type, listener, options) {
+        var listenerData = listener._listenerData = listener._listenerData || {
+            selector: queryData.selector,
+            type: type,
+            listener: listener,
+            options: options
         }
-    } else {
-        return function (type, listener, options) {
-            queryData.nodes.forEach((node) => {
-                node.addEventListener(type, listener, options)
-            })
-        }
+        queryData.nodes.forEach((node, i) => {
+            node.addEventListener(type, listener, options)
+            queryData.wrappers[i].listeners.push(listenerData)
+        });
+        if (refrence) refrenceListeners.push(listenerData);
     }
 }
 function wrapElement(element) {
@@ -428,19 +436,19 @@ function wrapElement(element) {
         element.id = createId()
     }
     if (!elementCache[element.id]) {
-        elementCache[element.id] = proxy(null, element, null, null)
+        elementCache[element.id] = proxy(null, element, null)
     }
     return elementCache[element.id];
 }
 
-function proxy(parent, current, name, parentBindings) {
+function proxy(parent, current, name) {
     var bindings = {};
     var data = {
         bindings: bindings,
-        parentBindings: parentBindings,
         parent: parent,
         current: current,
-        name: name
+        name: name,
+        listeners: []
     }
     var type = typeof current;
     var iselement = type === 'object' && isElement(current);
@@ -471,7 +479,7 @@ function proxy(parent, current, name, parentBindings) {
             } else if (iselement) {
                 return elementMethods[name](data, false)
             } else if (current[name]) {
-                if (typeof current[name] === 'object') return proxy(current, current[name], name, bindings);
+                if (typeof current[name] === 'object') return proxy(current, current[name], name);
                 else return current[name];
             }
         },
@@ -523,20 +531,25 @@ function proxy(parent, current, name, parentBindings) {
 function Query(nodes, selector) {
     var object = {
         nodes: nodes,
+        wrappers: [],
         selector: selector,
         selectorSplit: selector.split(/[> ]/)
     }
 
+    nodes.forEach((node, i) => {
+        object.wrappers[i] = wrapElement(node);
+    })
     return new Proxy(object, {
         get: function (target, name) {
             if (name === 'length') return nodes.length;
-            else if (typeof name === 'number' && object.nodes[name]) {
-                return wrapElement(object.nodes[name]);
-            }
+
             var refrence = false;
             if (name.charAt(0) === '$') {
                 name = name.substr(1);
                 refrence = true;
+            }
+            if (typeof name === 'number' && object.nodes[name]) {
+                return refrence ? object.nodes[name] : object.wrappers[name];
             }
             if (queryMethods[name]) return queryMethods[name](object, refrence);
             else if (nodes.length === 1) return object.nodes[0][(refrence ? '$' : '') + name];
