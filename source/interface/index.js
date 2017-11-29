@@ -1,16 +1,3 @@
-/*
- Aquery: The world's best DOM wrapper
-
- Author: Andrews54757 & LegitSoulja
- License: MIT (https://github.com/ThreeLetters/AQuery/blob/master/LICENSE)
- Source: https://github.com/ThreeLetters/AQuery
- Build: v0.0.1
- Built on: 28/11/2017
-*/
-
-(function (window) {
-var elementMethods = {},
-    queryMethods = {};
 function proxy(parent, current, name, parentBindings) {
     var bindings = {};
     var data = {
@@ -94,60 +81,3 @@ function proxy(parent, current, name, parentBindings) {
         }
     })
 }
-function Query(nodes, selector) {
-    var object = {
-        nodes: nodes,
-        wrapperCache: [],
-        selector: selector
-    }
-
-    return new Proxy(object, {
-        get: function (target, name) {
-            if (name === 'length') return nodes.length;
-            else if (typeof name === 'number' && object.nodes[name]) {
-                if (!object.wrapperCache[name])
-                    object.wrapperCache[name] = proxy(null, object.nodes[name], null, null)
-                return object.wrapperCache[name];
-            }
-            var refrence = false;
-            if (name.charAt(0) === '$') {
-                name = name.substr(1);
-                refrence = true;
-            }
-            if (queryMethods[name]) return queryMethods[name](object, refrence);
-            else if (nodes.length === 1) return object.nodes[0][(refrence ? '$' : '') + name];
-        },
-        set: function (target, name, value) {
-
-        }
-    })
-}
-var selectCache = {};
-
-var AQuery = new Proxy(function (selector) {
-    if (!selector) return;
-    else if (typeof selector === 'string') {
-        var elements = select(selector);
-        return Query(elements, selector)
-    }
-}, {
-    get: function (target, name) {
-        if (selectCache[name]) {
-            return selectCache[name];
-        }
-    },
-    set: function (target, name, value) {
-
-    }
-});
-
-
-function select(selector) {
-    return Array.from(document.querySelectorAll(selector));
-}
-
-window.AQuery = AQuery
-if (!window.$) {
-    window.$ = window.AQuery;
-}
-})(window)

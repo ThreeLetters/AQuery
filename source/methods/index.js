@@ -1,0 +1,2 @@
+var elementMethods = {},
+    queryMethods = {};
