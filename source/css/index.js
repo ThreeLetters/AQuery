@@ -20,8 +20,7 @@ function css(element, property, value) {
 
 function getCssString(name) {
 
-    name.split('-');
-    return name.map((n, i) => {
+    return name.split('-').map((n, i) => {
         if (i !== 0) return capitalizeFirstLetter(n);
         return n;
     }).join('');
@@ -37,7 +36,7 @@ function updateCSSRefrence(styleElement) {
         out.push(name, ':', styleElement.style[name], ';')
     }
     out.push('}')
-    styleElement.innerHTML = '<br><style>' + out.join('') + ' {}</style>'
+    styleElement.element.innerHTML = '<br><style>' + out.join('') + '</style>'
 }
 
 elementMethods.css = function (elementData) {
@@ -47,12 +46,14 @@ elementMethods.css = function (elementData) {
 }
 queryMethods.css = function (queryData, refrence, type) {
     if (type === 'delete') {
-        if (cssRefrences[queryData.selector]) {
-            Head.removeChild(cssRefrences[queryData.selector].element)
-            cssRefrences[queryData.selector] = null;
-            return true;
+        if (refrence) {
+            if (cssRefrences[queryData.selector]) {
+                Head.removeChild(cssRefrences[queryData.selector].element)
+                cssRefrences[queryData.selector] = null;
+                return true;
+            }
+            return false;
         }
-        return false;
     } else if (type === 'get') {
         if (refrence) {
             return new Proxy(function (property, value) {

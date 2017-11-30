@@ -18,8 +18,25 @@ var elementMethods = {},
     refrenceListeners = [],
     nodeId = 0,
     AQuery,
-    Head = document.head || document.getElementsByTagName("head")[0],
+    Head = {
+        nodes: [],
+        appendChild: function (node) {
+            this.nodes.push(node)
+        },
+        removeChild: function (node) {
+            var ind = this.nodes.indexOf(node);
+            if (ind !== -1) this.node.splice(ind, 1)
+        }
+    },
     cssRefrences = {};
+
+window.addEventListener('load', function () {
+    var head = document.head || document.getElementsByTagName("head")[0];
+    Head.nodes.forEach((node) => {
+        head.appendChild(node);
+    })
+    Head = head;
+})
 
 function createId() {
     return 'aquery_id_' + nodeId++;
@@ -76,8 +93,7 @@ function css(element, property, value) {
 
 function getCssString(name) {
 
-    name.split('-');
-    return name.map((n, i) => {
+    return name.split('-').map((n, i) => {
         if (i !== 0) return capitalizeFirstLetter(n);
         return n;
     }).join('');
@@ -93,7 +109,7 @@ function updateCSSRefrence(styleElement) {
         out.push(name, ':', styleElement.style[name], ';')
     }
     out.push('}')
-    styleElement.innerHTML = '<br><style>' + out.join('') + ' {}</style>'
+    styleElement.element.innerHTML = '<br><style>' + out.join('') + '</style>'
 }
 
 elementMethods.css = function (elementData) {
@@ -103,12 +119,14 @@ elementMethods.css = function (elementData) {
 }
 queryMethods.css = function (queryData, refrence, type) {
     if (type === 'delete') {
-        if (cssRefrences[queryData.selector]) {
-            Head.removeChild(cssRefrences[queryData.selector].element)
-            cssRefrences[queryData.selector] = null;
-            return true;
+        if (refrence) {
+            if (cssRefrences[queryData.selector]) {
+                Head.removeChild(cssRefrences[queryData.selector].element)
+                cssRefrences[queryData.selector] = null;
+                return true;
+            }
+            return false;
         }
-        return false;
     } else if (type === 'get') {
         if (refrence) {
             return new Proxy(function (property, value) {
@@ -169,8 +187,9 @@ function getProperty(element, property) {
 // css/setProperty.js
 function setProperty(element, property, value) {
     property = getCssString(property);
-    var newValue = value;
+
     var value2 = parseFloat(value);
+    var newValue = value2;
     var originalValueRaw = getProperty(element, property);
     var originalValue = parseFloat(originalValueRaw)
     if (typeof value === 'string' && value.length > 2 && value.charAt(1) === '=') {
@@ -225,8 +244,8 @@ function setPropertyRefrence(queryData, property, value) {
     }
     var styleElement = cssRefrences[queryData.selector];
     property = getCssString(property);
-    var newValue = value;
     var value2 = parseFloat(value);
+    var newValue = value2;
     var originalValueRaw = styleElement.style[property];
     var originalValue = parseFloat(originalValueRaw)
     if (typeof value === 'string' && value.length > 2 && value.charAt(1) === '=') {
@@ -1132,11 +1151,25 @@ function Query(nodes, selector) {
             if (typeof name === 'number' && object.nodes[name]) {
                 return refrence ? object.nodes[name] : object.wrappers[name];
             }
-            if (queryMethods[name]) return queryMethods[name](object, refrence);
+
+            if (queryMethods[name]) return queryMethods[name](object, refrence, 'get');
             else if (nodes.length === 1) return object.nodes[0][(refrence ? '$' : '') + name];
         },
         set: function (target, name, value) {
-
+            var refrence = false;
+            if (name.charAt(0) === '$') {
+                name = name.substr(1);
+                refrence = true;
+            }
+            if (queryMethods[name]) return queryMethods[name](object, refrence, 'set', value);
+        },
+        deleteProperty: function (target, name) {
+            var refrence = false;
+            if (name.charAt(0) === '$') {
+                name = name.substr(1);
+                refrence = true;
+            }
+            if (queryMethods[name]) return queryMethods[name](object, refrence, 'delete');
         }
     })
 }

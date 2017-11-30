@@ -14,11 +14,12 @@
     <script>
         var el = $('#test')
         el.style.backgroundColor = 'blue';
-        el.style.width = el.style.height = '100px'
 
-        $('.clickclass').$on('click', function() {
-            console.log('clicked')
-        })
+        $('.clickclass').$css({
+            width: '100px',
+            height: '100px'
+        });
+
     </script>
 </body>
 

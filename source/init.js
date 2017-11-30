@@ -6,8 +6,25 @@ var elementMethods = {},
     refrenceListeners = [],
     nodeId = 0,
     AQuery,
-    Head = document.head || document.getElementsByTagName("head")[0],
+    Head = {
+        nodes: [],
+        appendChild: function (node) {
+            this.nodes.push(node)
+        },
+        removeChild: function (node) {
+            var ind = this.nodes.indexOf(node);
+            if (ind !== -1) this.node.splice(ind, 1)
+        }
+    },
     cssRefrences = {};
+
+window.addEventListener('load', function () {
+    var head = document.head || document.getElementsByTagName("head")[0];
+    Head.nodes.forEach((node) => {
+        head.appendChild(node);
+    })
+    Head = head;
+})
 
 function createId() {
     return 'aquery_id_' + nodeId++;

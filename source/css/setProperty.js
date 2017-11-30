@@ -1,7 +1,8 @@
 function setProperty(element, property, value) {
     property = getCssString(property);
-    var newValue = value;
+
     var value2 = parseFloat(value);
+    var newValue = value2;
     var originalValueRaw = getProperty(element, property);
     var originalValue = parseFloat(originalValueRaw)
     if (typeof value === 'string' && value.length > 2 && value.charAt(1) === '=') {
@@ -56,8 +57,8 @@ function setPropertyRefrence(queryData, property, value) {
     }
     var styleElement = cssRefrences[queryData.selector];
     property = getCssString(property);
-    var newValue = value;
     var value2 = parseFloat(value);
+    var newValue = value2;
     var originalValueRaw = styleElement.style[property];
     var originalValue = parseFloat(originalValueRaw)
     if (typeof value === 'string' && value.length > 2 && value.charAt(1) === '=') {
