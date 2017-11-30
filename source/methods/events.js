@@ -7,6 +7,14 @@ elementMethods.on = elementMethods.addEventListener = function (elementData, ref
     } else {
 
         return new Proxy(function (type, listener, options) {
+            if (!listener) {
+                elementData.listeners.forEach((listener) => {
+                    if (listener.type === type) {
+                        listener.listener.apply(elementData.current, []);
+                    }
+                })
+                return;
+            }
             listener._listenerData = listener._listenerData || {
                 type: type,
                 listener: listener,
@@ -35,6 +43,7 @@ elementMethods.on = elementMethods.addEventListener = function (elementData, ref
                             if (typeof name === 'number') {
                                 var l = newList[name];
                                 if (!l) return;
+                                l = l._listenerData
                                 newList.splice(name, 1);
                                 var ind = elementData.listeners.indexOf(l);
                                 if (l !== -1) elementData.listeners.splice(ind, 1);
@@ -79,6 +88,17 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
         queryData.listeners = [];
     } else {
         return new Proxy(function (type, listener, options) {
+            if (!listener) {
+                queryData.listeners.forEach((listener) => {
+                    if (listener.type === type) {
+                        queryData.wrappers.forEach((wrapper) => {
+                            if (wrapper.elementData.listeners.indexOf(listener) !== -1)
+                                listener.listener.apply(wrapper.elementData.current, []);
+                        })
+                    }
+                })
+                return;
+            }
             var listenerData = listener._listenerData = listener._listenerData || {
                 selector: queryData.selector,
                 type: type,
@@ -113,6 +133,7 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                             if (typeof name === 'number') {
                                 var l = newList[name];
                                 if (!l) return;
+                                l = l._listenerData
                                 newList.splice(name, 1);
                                 var ind = queryData.listeners.indexOf(l);
                                 if (l !== -1) queryData.listeners.splice(ind, 1);
