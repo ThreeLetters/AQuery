@@ -17,7 +17,9 @@ var elementMethods = {},
     elementCache = {},
     refrenceListeners = [],
     nodeId = 0,
-    AQuery;
+    AQuery,
+    Head = document.head || document.getElementsByTagName("head")[0],
+    cssRefrences = {};
 
 function createId() {
     return 'aquery_id_' + nodeId++;
@@ -85,17 +87,63 @@ function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
+function updateCSSRefrence(styleElement) {
+    var out = [styleElement.selector, ' {']
+    for (var name in styleElement.style) {
+        out.push(name, ':', styleElement.style[name], ';')
+    }
+    out.push('}')
+    styleElement.innerHTML = '<br><style>' + out.join('') + ' {}</style>'
+}
 
 elementMethods.css = function (elementData) {
     return function (property, value) {
         return css(elementData.proxy, property, value)
     }
 }
-queryMethods.css = function (queryData) {
-    return function (property, value) {
-        return queryData.wrappers.map((wrap) => {
-            return css(wrap, property, value)
-        })
+queryMethods.css = function (queryData, refrence, type) {
+    if (type === 'delete') {
+        if (cssRefrences[queryData.selector]) {
+            Head.removeChild(cssRefrences[queryData.selector].element)
+            cssRefrences[queryData.selector] = null;
+            return true;
+        }
+        return false;
+    } else if (type === 'get') {
+        if (refrence) {
+            return new Proxy(function (property, value) {
+                if (typeof property === 'object') {
+
+                    if (Array.isArray(property)) {
+                        if (!cssRefrences[queryData.selector]) return false;
+                        return property.map((name) => {
+                            return cssRefrences[queryData.selector][getCssString(name)]
+                        })
+                    } else {
+                        var out = {};
+                        for (var name in property) {
+                            out[name] = setPropertyRefrence(queryData, name, property[name])
+                        }
+                        return out;
+                    }
+                } else if (typeof property === 'string') {
+                    return value ? setPropertyRefrence(element, property, value) : cssRefrences[queryData.selector][getCssString(name)];
+                }
+            }, {
+                deleteProperty: function (target, name) {
+                    if (!cssRefrences[queryData.selector]) return false;
+                    delete cssRefrences[queryData.selector].style[name];
+                    updateCSSRefrence(cssRefrences[queryData.selector]);
+                    return true;
+                }
+            })
+        } else {
+            return function (property, value) {
+                return queryData.wrappers.map((wrap) => {
+                    return css(wrap, property, value)
+                })
+            }
+        }
     }
 }
 
@@ -162,6 +210,64 @@ function setProperty(element, property, value) {
     }
 
     return element.style[property] = newValue + ending;
+}
+
+function setPropertyRefrence(queryData, property, value) {
+    if (!cssRefrences[queryData.selector]) {
+        var newStyleElement = document.createElement('div');
+        newStyleElement.innerHTML = '<br><style>' + queryData.selector + ' {}</style>'
+        Head.appendChild(newStyleElement);
+        cssRefrences[queryData.selector] = {
+            element: newStyleElement,
+            style: {},
+            selector: queryData.selector
+        }
+    }
+    var styleElement = cssRefrences[queryData.selector];
+    property = getCssString(property);
+    var newValue = value;
+    var value2 = parseFloat(value);
+    var originalValueRaw = styleElement.style[property];
+    var originalValue = parseFloat(originalValueRaw)
+    if (typeof value === 'string' && value.length > 2 && value.charAt(1) === '=') {
+        var operator = value.charAt(0);
+        var isFound = true;
+
+        value2 = parseFloat(value.substr(2));
+
+        switch (operator) {
+            case '+':
+                newValue = originalValue + value2;
+                break;
+            case '-':
+                newValue = originalValue - value2;
+                break;
+            case '*':
+                newValue = originalValue * value2;
+                break;
+            case '/':
+                newValue = originalValue / value2;
+                break;
+            case '^':
+                newValue = Math.pow(originalValue, value2);
+                break;
+            default:
+                isFound = false;
+                break;
+        }
+        if (isFound) {
+            value = value.substr(2);
+        }
+    }
+
+    var ending = value.substr(value2.toString().length);
+    if (!ending) {
+        ending = originalValueRaw.substr(originalValue.toString().length);
+    }
+
+    styleElement.style[property] = newValue + ending;
+    updateCSSRefrence(styleElement);
+    return styleElement.style[property];
 }
 // methods/ajax.js
 var minirequest = function ( /**/ ) {

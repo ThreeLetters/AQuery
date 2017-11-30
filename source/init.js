@@ -5,7 +5,9 @@ var elementMethods = {},
     elementCache = {},
     refrenceListeners = [],
     nodeId = 0,
-    AQuery;
+    AQuery,
+    Head = document.head || document.getElementsByTagName("head")[0],
+    cssRefrences = {};
 
 function createId() {
     return 'aquery_id_' + nodeId++;
