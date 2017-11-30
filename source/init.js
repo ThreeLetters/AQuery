@@ -32,3 +32,10 @@ if (!Element.prototype.matches) {
             return i > -1;
         };
 }
+
+// only implement if no native implementation is available
+if (typeof Array.isArray === 'undefined') {
+    Array.isArray = function (obj) {
+        return Object.prototype.toString.call(obj) === '[object Array]';
+    }
+};

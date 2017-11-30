@@ -1,5 +1,6 @@
 function proxy(parent, current, name) {
     var bindings = {};
+    var cache = {};
     var data = {
         bindings: bindings,
         parent: parent,
@@ -9,7 +10,7 @@ function proxy(parent, current, name) {
     }
     var type = typeof current;
     var iselement = type === 'object' && isElement(current);
-    return new Proxy(current, {
+    var proxyOut = new Proxy(current, {
         get: function (target, name) {
             if (name === 'elementData') {
                 return data;
@@ -36,8 +37,12 @@ function proxy(parent, current, name) {
             } else if (iselement && elementMethods[name]) {
                 return elementMethods[name](data, false, 'get')
             } else if (current[name]) {
-                if (typeof current[name] === 'object') return proxy(current, current[name], name);
-                else return current[name];
+                if (typeof current[name] === 'object') {
+                    if (!cache[name] || cache[name].elementData.current !== current[name]) {
+                        cache[name] = isElement(current[name]) ? wrapElement(current[name]) : proxy(current, current[name], name);
+                    }
+                    return cache[name];
+                } else return current[name];
             }
         },
         set: function (target, name, value) {
@@ -95,4 +100,6 @@ function proxy(parent, current, name) {
             }
         }
     })
+    data.proxy = proxyOut;
+    return proxyOut;
 }

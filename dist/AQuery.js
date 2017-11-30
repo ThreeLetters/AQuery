@@ -5,7 +5,7 @@
  License: MIT (https://github.com/ThreeLetters/AQuery/blob/master/LICENSE)
  Source: https://github.com/ThreeLetters/AQuery
  Build: v0.0.1
- Built on: 29/11/2017
+ Built on: 30/11/2017
 */
 
 (function (window) {
@@ -43,6 +43,125 @@ if (!Element.prototype.matches) {
             while (--i >= 0 && matches.item(i) !== this) {}
             return i > -1;
         };
+}
+
+// only implement if no native implementation is available
+if (typeof Array.isArray === 'undefined') {
+    Array.isArray = function (obj) {
+        return Object.prototype.toString.call(obj) === '[object Array]';
+    }
+};
+// css/index.js
+function css(element, property, value) {
+
+    if (typeof property === 'object') {
+        if (Array.isArray(property)) {
+            return property.map((name) => {
+                return getProperty(element, name)
+            })
+        } else {
+            var out = {};
+            for (var name in property) {
+                out[name] = setProperty(element, name, property[name])
+            }
+            return out;
+        }
+    } else if (typeof property === 'string') {
+        return value ? setProperty(element, property, value) : getProperty(element, property)
+    }
+
+}
+
+function getCssString(name) {
+
+    name.split('-');
+    return name.map((n, i) => {
+        if (i !== 0) return capitalizeFirstLetter(n);
+        return n;
+    }).join('');
+}
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+
+elementMethods.css = function (elementData) {
+    return function (property, value) {
+        return css(elementData.proxy, property, value)
+    }
+}
+queryMethods.css = function (queryData) {
+    return function (property, value) {
+        return queryData.wrappers.map((wrap) => {
+            return css(wrap, property, value)
+        })
+    }
+}
+
+AQueryMethods.css = function () {
+    return function (property, value, element) {
+        if (element && typeof element === 'object') {
+            return element.map((wrap) => {
+                return css(wrap, property, value)
+            })
+        }
+        return css(element || document.body, property, value)
+    }
+}
+// css/getProperty.js
+function getProperty(element, property) {
+    property = getCssString(property);
+
+    if (element.style[property]) return element.style[property];
+
+    var styles = window.getComputedStyle(element);
+    return styles.getPropertyValue(property);
+}
+// css/setProperty.js
+function setProperty(element, property, value) {
+    property = getCssString(property);
+    var newValue = value;
+    var value2 = parseFloat(value);
+    var originalValueRaw = getProperty(element, property);
+    var originalValue = parseFloat(originalValueRaw)
+    if (typeof value === 'string' && value.length > 2 && value.charAt(1) === '=') {
+        var operator = value.charAt(0);
+        var isFound = true;
+
+        value2 = parseFloat(value.substr(2));
+
+        switch (operator) {
+            case '+':
+                newValue = originalValue + value2;
+                break;
+            case '-':
+                newValue = originalValue - value2;
+                break;
+            case '*':
+                newValue = originalValue * value2;
+                break;
+            case '/':
+                newValue = originalValue / value2;
+                break;
+            case '^':
+                newValue = Math.pow(originalValue, value2);
+                break;
+            default:
+                isFound = false;
+                break;
+        }
+        if (isFound) {
+            value = value.substr(2);
+        }
+    }
+
+    var ending = value.substr(value2.toString().length);
+    if (!ending) {
+        ending = originalValueRaw.substr(originalValue.toString().length);
+    }
+
+    return element.style[property] = newValue + ending;
 }
 // methods/ajax.js
 var minirequest = function ( /**/ ) {
@@ -481,6 +600,41 @@ elementMethods.clone = function (elementData, refrence) {
         return wrap;
     }
 }
+// methods/dimensions.js
+elementMethods.outerWidth = function (elementData, refrence, type) {
+    if (type === 'get') {}
+}
+
+elementMethods.outerHeight = function (elementData, refrence, type) {
+    if (type === 'get') {}
+}
+
+elementMethods.innerWidth = function (elementData, refrence, type) {
+    if (type === 'get') {}
+}
+
+elementMethods.innerHeight = function (elementData, refrence, type) {
+    if (type === 'get') {}
+}
+
+elementMethods.width = function (elementData, refrence, type) {
+    if (type === 'get') {}
+}
+elementMethods.height = function (elementData, refrence, type) {
+    if (type === 'get') {}
+}
+
+
+AQueryMethods.width = function (refrence, type) {
+    if (type === 'get') {
+        return Math.max(document.scrollHeight, document.offsetHeight, document.clientHeight)
+    }
+}
+AQueryMethods.height = function (refrence, type) {
+    if (type === 'get') {
+        return Math.max(document.scrollWidth, document.offsetWidth, document.clientWidth)
+    }
+}
 // methods/events.js
 elementMethods.on = elementMethods.addEventListener = function (elementData, refrence, type) {
     if (type === 'delete') {
@@ -735,6 +889,7 @@ queryMethods.toggle = function (queryData) {
 // interface/proxyObject.js
 function proxy(parent, current, name) {
     var bindings = {};
+    var cache = {};
     var data = {
         bindings: bindings,
         parent: parent,
@@ -744,7 +899,7 @@ function proxy(parent, current, name) {
     }
     var type = typeof current;
     var iselement = type === 'object' && isElement(current);
-    return new Proxy(current, {
+    var proxyOut = new Proxy(current, {
         get: function (target, name) {
             if (name === 'elementData') {
                 return data;
@@ -771,8 +926,12 @@ function proxy(parent, current, name) {
             } else if (iselement && elementMethods[name]) {
                 return elementMethods[name](data, false, 'get')
             } else if (current[name]) {
-                if (typeof current[name] === 'object') return proxy(current, current[name], name);
-                else return current[name];
+                if (typeof current[name] === 'object') {
+                    if (!cache[name] || cache[name].elementData.current !== current[name]) {
+                        cache[name] = isElement(current[name]) ? wrapElement(current[name]) : proxy(current, current[name], name);
+                    }
+                    return cache[name];
+                } else return current[name];
             }
         },
         set: function (target, name, value) {
@@ -830,6 +989,8 @@ function proxy(parent, current, name) {
             }
         }
     })
+    data.proxy = proxyOut;
+    return proxyOut;
 }
 // interface/elementWrapper.js
 function wrapElement(element) {

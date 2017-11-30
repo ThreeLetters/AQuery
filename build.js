@@ -1,5 +1,7 @@
 var files = [
     'init.js',
+    'css/index.js',
+    'css/*.js',
     'methods/*.js',
     'interface/proxyObject.js',
     'interface/elementWrapper.js',
