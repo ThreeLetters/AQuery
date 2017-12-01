@@ -1382,13 +1382,18 @@ function Query(nodes, selector) {
 }
 // interface/mainInterface.js
 function createMain() {
-    return new Proxy(function (selector) {
+    var proxyout = new Proxy(function (selector) {
         if (!selector) return;
         else if (typeof selector === 'string') {
             var elements = select(selector);
             return Query(elements, selector)
         } else if (typeof selector === 'object') {
-            return wrapElement(selector);
+
+            if (selector.nodeType === 9) {
+                return proxyout;
+            } else if (selector.nodeType === 1) {
+                return wrapElement(selector);
+            }
         }
     }, {
         get: function (target, name) {
@@ -1425,6 +1430,7 @@ function createMain() {
             }
         }
     });
+    return proxyout;
 }
 
 function select(selector) {
