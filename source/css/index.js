@@ -13,7 +13,7 @@ function css(element, property, value) {
             return out;
         }
     } else if (typeof property === 'string') {
-        return value ? setProperty(element, property, value) : getProperty(element, property)
+        return (value !== undefined) ? setProperty(element, property, value) : getProperty(element, property)
     }
 
 }
@@ -58,7 +58,6 @@ queryMethods.css = function (queryData, refrence, type) {
         if (refrence) {
             return new Proxy(function (property, value) {
                 if (typeof property === 'object') {
-
                     if (Array.isArray(property)) {
                         if (!cssRefrences[queryData.selector]) return false;
                         return property.map((name) => {
@@ -72,7 +71,7 @@ queryMethods.css = function (queryData, refrence, type) {
                         return out;
                     }
                 } else if (typeof property === 'string') {
-                    return value ? setPropertyRefrence(element, property, value) : cssRefrences[queryData.selector][getCssString(name)];
+                    return (value !== undefined) ? setPropertyRefrence(element, property, value) : cssRefrences[queryData.selector][getCssString(name)];
                 }
             }, {
                 deleteProperty: function (target, name) {

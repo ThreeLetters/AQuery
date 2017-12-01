@@ -1,11 +1,11 @@
 /*
  Aquery: The world's best DOM wrapper
 
- Author: Andrews54757 & LegitSoulja
+ Author: Andrews54757
  License: MIT (https://github.com/ThreeLetters/AQuery/blob/master/LICENSE)
  Source: https://github.com/ThreeLetters/AQuery
  Build: v0.0.1
- Built on: 30/11/2017
+ Built on: 01/12/2017
 */
 
 (function (window) {
@@ -86,7 +86,7 @@ function css(element, property, value) {
             return out;
         }
     } else if (typeof property === 'string') {
-        return value ? setProperty(element, property, value) : getProperty(element, property)
+        return (value !== undefined) ? setProperty(element, property, value) : getProperty(element, property)
     }
 
 }
@@ -131,7 +131,6 @@ queryMethods.css = function (queryData, refrence, type) {
         if (refrence) {
             return new Proxy(function (property, value) {
                 if (typeof property === 'object') {
-
                     if (Array.isArray(property)) {
                         if (!cssRefrences[queryData.selector]) return false;
                         return property.map((name) => {
@@ -145,7 +144,7 @@ queryMethods.css = function (queryData, refrence, type) {
                         return out;
                     }
                 } else if (typeof property === 'string') {
-                    return value ? setPropertyRefrence(element, property, value) : cssRefrences[queryData.selector][getCssString(name)];
+                    return (value !== undefined) ? setPropertyRefrence(element, property, value) : cssRefrences[queryData.selector][getCssString(name)];
                 }
             }, {
                 deleteProperty: function (target, name) {
@@ -182,7 +181,13 @@ function getProperty(element, property) {
     if (element.style[property]) return element.style[property];
 
     var styles = window.getComputedStyle(element);
-    return styles.getPropertyValue(property);
+    return styles.getPropertyValue(getPropertyString(property));
+}
+
+function getPropertyString(property) {
+    return property.replace(/[A-Z]/g, function (a) {
+        return '-' + a.toLowerCase();
+    });
 }
 // css/setProperty.js
 function setProperty(element, property, value) {
@@ -726,28 +731,34 @@ elementMethods.clone = function (elementData, refrence) {
     }
 }
 // methods/dimensions.js
-elementMethods.outerWidth = function (elementData, refrence, type) {
-    if (type === 'get') {}
-}
+['width', 'height'].forEach((dimension, dim) => {
+    ['', 'inner', 'outer', 'whole'].forEach((extra, type) => {
+        var dimensionStr = dimension;
+        if (extra) dimensionStr = dimension.charAt(0).toUpperCase() + dimension.substr(1);
+        var str = extra + dimensionStr;
+        elementMethods[str] = function (elementData, refrence, actiontype, setvalue) {
+            var offset = 0;
+            if (type) {
+                offset += parseFloat(css(elementData.proxy, dim ? 'padding-top' : 'padding-left'));
+                offset += parseFloat(css(elementData.proxy, dim ? 'padding-bottom' : 'padding-right'));
+                if (type >= 2) {
+                    offset += parseFloat(css(elementData.proxy, dim ? 'border-top-width' : 'border-left-width'));
+                    offset += parseFloat(css(elementData.proxy, dim ? 'border-bottom-width' : 'border-right-width'));
+                    if (type === 3) {
+                        offset += parseFloat(css(elementData.proxy, dim ? 'margin-top' : 'margin-left'));
+                        offset += parseFloat(css(elementData.proxy, dim ? 'margin-bottom' : 'margin-right'));
+                    }
+                }
+            }
+            if (setvalue && type) {
+                setvalue = parseFloat(setvalue) - offset;
+            }
+            var value = parseFloat(css(elementData.proxy, dimension, setvalue));
+            return value + offset;
+        }
+    });
+})
 
-elementMethods.outerHeight = function (elementData, refrence, type) {
-    if (type === 'get') {}
-}
-
-elementMethods.innerWidth = function (elementData, refrence, type) {
-    if (type === 'get') {}
-}
-
-elementMethods.innerHeight = function (elementData, refrence, type) {
-    if (type === 'get') {}
-}
-
-elementMethods.width = function (elementData, refrence, type) {
-    if (type === 'get') {}
-}
-elementMethods.height = function (elementData, refrence, type) {
-    if (type === 'get') {}
-}
 
 
 AQueryMethods.width = function (refrence, type) {
@@ -1228,7 +1239,7 @@ function proxy(parent, current, name) {
             if (name.charAt(0) === '$') {
                 name = name.substr(1);
                 if (iselement && elementMethods[name]) {
-                    return elementMethods[name](data, true, 'get')
+                    return elementMethods[name](data, true, 'get', undefined, name)
                 } else {
                     if (!bindings[name]) bindings[name] = {
                         isRefrence: true,
@@ -1245,7 +1256,7 @@ function proxy(parent, current, name) {
                     return bindings[name];
                 }
             } else if (iselement && elementMethods[name]) {
-                return elementMethods[name](data, false, 'get')
+                return elementMethods[name](data, false, 'get', undefined, name)
             } else if (current[name]) {
                 if (typeof current[name] === 'object') {
                     if (!cache[name] || cache[name].elementData.current !== current[name]) {
@@ -1260,7 +1271,7 @@ function proxy(parent, current, name) {
             if (name.charAt(0) === '$') name = name.substr(1), refrence = true;
 
             if (iselement && elementMethods[name]) {
-                elementMethods[name](data, true, 'set', value)
+                elementMethods[name](data, true, 'set', value, name)
             } else {
                 if (value && value.isRefrence) {
                     if (bindings[name] !== value) {
@@ -1289,7 +1300,7 @@ function proxy(parent, current, name) {
             if (name.charAt(0) === '$') {
                 name = name.substr(1);
                 if (iselement && elementMethods[name]) {
-                    elementMethods[name](data, true, 'delete')
+                    elementMethods[name](data, true, 'delete', undefined, name)
                 } else {
                     if (bindings[name]) {
                         if (bindings[name].owner === current) {
@@ -1306,7 +1317,7 @@ function proxy(parent, current, name) {
                     }
                 }
             } else if (iselement && elementMethods[name]) {
-                elementMethods[name](data, false, 'delete')
+                elementMethods[name](data, false, 'delete', undefined, name)
             }
         }
     })
@@ -1348,7 +1359,7 @@ function Query(nodes, selector) {
                 return refrence ? object.nodes[name] : object.wrappers[name];
             }
 
-            if (queryMethods[name]) return queryMethods[name](object, refrence, 'get');
+            if (queryMethods[name]) return queryMethods[name](object, refrence, 'get', undefined, name);
             else if (nodes.length === 1) return object.nodes[0][(refrence ? '$' : '') + name];
         },
         set: function (target, name, value) {
@@ -1357,7 +1368,7 @@ function Query(nodes, selector) {
                 name = name.substr(1);
                 refrence = true;
             }
-            if (queryMethods[name]) return queryMethods[name](object, refrence, 'set', value);
+            if (queryMethods[name]) return queryMethods[name](object, refrence, 'set', value, name);
         },
         deleteProperty: function (target, name) {
             var refrence = false;
@@ -1365,7 +1376,7 @@ function Query(nodes, selector) {
                 name = name.substr(1);
                 refrence = true;
             }
-            if (queryMethods[name]) return queryMethods[name](object, refrence, 'delete');
+            if (queryMethods[name]) return queryMethods[name](object, refrence, 'delete', undefined, name);
         }
     })
 }
@@ -1387,7 +1398,7 @@ function createMain() {
                 name = name.substr(1)
             }
             if (AQueryMethods[name]) {
-                return AQueryMethods[name](refrence, 'get')
+                return AQueryMethods[name](refrence, 'get', undefined, name)
             } else
             if (selectCache[name]) {
                 return selectCache[name];
@@ -1400,7 +1411,7 @@ function createMain() {
                 name = name.substr(1)
             }
             if (AQueryMethods[name]) {
-                return AQueryMethods[name](refrence, 'set', value)
+                return AQueryMethods[name](refrence, 'set', value, name)
             }
         },
         deleteProperty: function (target, name) {
@@ -1410,7 +1421,7 @@ function createMain() {
                 name = name.substr(1)
             }
             if (AQueryMethods[name]) {
-                return AQueryMethods[name](refrence, 'delete', value)
+                return AQueryMethods[name](refrence, 'delete', undefined, name)
             }
         }
     });

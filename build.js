@@ -197,7 +197,7 @@ var top = `\
 /*\n\
  Aquery: The world's best DOM wrapper\n\
 \n\
- Author: Andrews54757 & LegitSoulja\n\
+ Author: Andrews54757\n\
  License: MIT (https://github.com/ThreeLetters/AQuery/blob/master/LICENSE)\n\
  Source: https://github.com/ThreeLetters/AQuery\n\
  Build: v${version}\n\

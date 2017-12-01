@@ -18,7 +18,7 @@ function proxy(parent, current, name) {
             if (name.charAt(0) === '$') {
                 name = name.substr(1);
                 if (iselement && elementMethods[name]) {
-                    return elementMethods[name](data, true, 'get')
+                    return elementMethods[name](data, true, 'get', undefined, name)
                 } else {
                     if (!bindings[name]) bindings[name] = {
                         isRefrence: true,
@@ -35,7 +35,7 @@ function proxy(parent, current, name) {
                     return bindings[name];
                 }
             } else if (iselement && elementMethods[name]) {
-                return elementMethods[name](data, false, 'get')
+                return elementMethods[name](data, false, 'get', undefined, name)
             } else if (current[name]) {
                 if (typeof current[name] === 'object') {
                     if (!cache[name] || cache[name].elementData.current !== current[name]) {
@@ -50,7 +50,7 @@ function proxy(parent, current, name) {
             if (name.charAt(0) === '$') name = name.substr(1), refrence = true;
 
             if (iselement && elementMethods[name]) {
-                elementMethods[name](data, true, 'set', value)
+                elementMethods[name](data, true, 'set', value, name)
             } else {
                 if (value && value.isRefrence) {
                     if (bindings[name] !== value) {
@@ -79,7 +79,7 @@ function proxy(parent, current, name) {
             if (name.charAt(0) === '$') {
                 name = name.substr(1);
                 if (iselement && elementMethods[name]) {
-                    elementMethods[name](data, true, 'delete')
+                    elementMethods[name](data, true, 'delete', undefined, name)
                 } else {
                     if (bindings[name]) {
                         if (bindings[name].owner === current) {
@@ -96,7 +96,7 @@ function proxy(parent, current, name) {
                     }
                 }
             } else if (iselement && elementMethods[name]) {
-                elementMethods[name](data, false, 'delete')
+                elementMethods[name](data, false, 'delete', undefined, name)
             }
         }
     })

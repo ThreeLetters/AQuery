@@ -22,7 +22,7 @@ function Query(nodes, selector) {
                 return refrence ? object.nodes[name] : object.wrappers[name];
             }
 
-            if (queryMethods[name]) return queryMethods[name](object, refrence, 'get');
+            if (queryMethods[name]) return queryMethods[name](object, refrence, 'get', undefined, name);
             else if (nodes.length === 1) return object.nodes[0][(refrence ? '$' : '') + name];
         },
         set: function (target, name, value) {
@@ -31,7 +31,7 @@ function Query(nodes, selector) {
                 name = name.substr(1);
                 refrence = true;
             }
-            if (queryMethods[name]) return queryMethods[name](object, refrence, 'set', value);
+            if (queryMethods[name]) return queryMethods[name](object, refrence, 'set', value, name);
         },
         deleteProperty: function (target, name) {
             var refrence = false;
@@ -39,7 +39,7 @@ function Query(nodes, selector) {
                 name = name.substr(1);
                 refrence = true;
             }
-            if (queryMethods[name]) return queryMethods[name](object, refrence, 'delete');
+            if (queryMethods[name]) return queryMethods[name](object, refrence, 'delete', undefined, name);
         }
     })
 }

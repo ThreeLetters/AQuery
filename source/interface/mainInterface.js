@@ -15,7 +15,7 @@ function createMain() {
                 name = name.substr(1)
             }
             if (AQueryMethods[name]) {
-                return AQueryMethods[name](refrence, 'get')
+                return AQueryMethods[name](refrence, 'get', undefined, name)
             } else
             if (selectCache[name]) {
                 return selectCache[name];
@@ -28,7 +28,7 @@ function createMain() {
                 name = name.substr(1)
             }
             if (AQueryMethods[name]) {
-                return AQueryMethods[name](refrence, 'set', value)
+                return AQueryMethods[name](refrence, 'set', value, name)
             }
         },
         deleteProperty: function (target, name) {
@@ -38,7 +38,7 @@ function createMain() {
                 name = name.substr(1)
             }
             if (AQueryMethods[name]) {
-                return AQueryMethods[name](refrence, 'delete', value)
+                return AQueryMethods[name](refrence, 'delete', undefined, name)
             }
         }
     });
