@@ -810,11 +810,7 @@ function generateElementEvent(eventType) {
 
             return new Proxy(function (listener, options) {
                 if (!listener) {
-                    elementData.listeners.forEach((listener) => {
-                        if (listener.type === eventType) {
-                            listener.listener.apply(elementData.current, []);
-                        }
-                    })
+                    elementData.current[eventType]();
                     return;
                 }
 
@@ -877,14 +873,11 @@ function generateQueryEvent(eventType) {
         } else {
             return new Proxy(function (listener, options) {
                 if (!listener) {
-                    queryData.listeners.forEach((listener) => {
-                        if (listener.type === eventType) {
-                            queryData.wrappers.forEach((wrapper) => {
-                                if (wrapper.elementData.listeners.indexOf(listener) !== -1)
-                                    listener.listener.apply(wrapper.elementData.current, []);
-                            })
-                        }
+
+                    queryData.nodes.forEach((element) => {
+                        element[eventType]();
                     })
+
                     return;
                 }
                 var listenerData = listener._listenerData = listener._listenerData || {
@@ -898,7 +891,7 @@ function generateQueryEvent(eventType) {
                 queryData.nodes.forEach((node, i) => {
                     var data = queryData.wrappers[i].elementData;
                     if (data.listeners.indexOf(listenerData) !== -1) return;
-                    node.addEventListener(type, listener, options)
+                    node.addEventListener(eventType, listener, options)
                     data.listeners.push(listenerData)
                 });
                 if (refrence && !listenerData.isRefrenceEvent) refrenceListeners.push(listenerData), listenerData.isRefrenceEvent = true;
@@ -944,7 +937,7 @@ function generateQueryEvent(eventType) {
 }
 
 
-var customEvents = ['blur', 'focus', 'keydown', 'keyup', 'keypress', 'resize', 'scroll', 'select', 'submit', 'clicl', 'dblclick', 'change', 'error', 'mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseout', 'mouseover', 'mouseup', 'contextmenu'];
+var customEvents = ['blur', 'focus', 'keydown', 'keyup', 'keypress', 'resize', 'scroll', 'select', 'submit', 'click', 'dblclick', 'change', 'error', 'mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseout', 'mouseover', 'mouseup', 'contextmenu'];
 
 customEvents.forEach((event) => {
     elementMethods[event] = generateElementEvent(event)
