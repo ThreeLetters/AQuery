@@ -1,5 +1,5 @@
 function css(element, property, value) {
-
+    if (element.elementData) element = element.elementData.current;
     if (typeof property === 'object') {
         if (Array.isArray(property)) {
             return property.map((name) => {
@@ -39,11 +39,21 @@ function updateCSSRefrence(styleElement) {
     styleElement.element.innerHTML = '<br><style>' + out.join('') + '</style>'
 }
 
-elementMethods.css = function (elementData) {
-    return function (property, value) {
-        return css(elementData.proxy, property, value)
+elementMethods.css = function (elementData, refrence, type) {
+    if (type === 'delete') {
+        return elementData.current.removeAttribute('style');
+    } else if (type === 'get') {
+        return new Proxy(function (property, value) {
+            return css(elementData.current, property, value)
+        }, {
+            deleteProperty: function (target, name) {
+                css(elementData.current, name, '')
+                return true;
+            }
+        });
     }
 }
+
 queryMethods.css = function (queryData, refrence, type) {
     if (type === 'delete') {
         if (refrence) {
@@ -53,6 +63,11 @@ queryMethods.css = function (queryData, refrence, type) {
                 return true;
             }
             return false;
+        } else {
+            queryData.wrappers.map((wrap) => {
+                return wrap.current.removeAttribute('style');
+            });
+            return true;
         }
     } else if (type === 'get') {
         if (refrence) {
@@ -82,11 +97,18 @@ queryMethods.css = function (queryData, refrence, type) {
                 }
             })
         } else {
-            return function (property, value) {
+            return new Proxy(function (property, value) {
                 return queryData.wrappers.map((wrap) => {
                     return css(wrap, property, value)
-                })
-            }
+                });
+            }, {
+                deleteProperty: function (target, name) {
+                    queryData.wrappers.map((wrap) => {
+                        return css(wrap, name, '');
+                    });
+                    return true;
+                }
+            })
         }
     }
 }

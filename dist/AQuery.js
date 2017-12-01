@@ -72,7 +72,7 @@ if (typeof Array.isArray === 'undefined') {
 };
 // css/index.js
 function css(element, property, value) {
-
+    if (element.elementData) element = element.elementData.current;
     if (typeof property === 'object') {
         if (Array.isArray(property)) {
             return property.map((name) => {
@@ -112,11 +112,21 @@ function updateCSSRefrence(styleElement) {
     styleElement.element.innerHTML = '<br><style>' + out.join('') + '</style>'
 }
 
-elementMethods.css = function (elementData) {
-    return function (property, value) {
-        return css(elementData.proxy, property, value)
+elementMethods.css = function (elementData, refrence, type) {
+    if (type === 'delete') {
+        return elementData.current.removeAttribute('style');
+    } else if (type === 'get') {
+        return new Proxy(function (property, value) {
+            return css(elementData.current, property, value)
+        }, {
+            deleteProperty: function (target, name) {
+                css(elementData.current, name, '')
+                return true;
+            }
+        });
     }
 }
+
 queryMethods.css = function (queryData, refrence, type) {
     if (type === 'delete') {
         if (refrence) {
@@ -126,6 +136,11 @@ queryMethods.css = function (queryData, refrence, type) {
                 return true;
             }
             return false;
+        } else {
+            queryData.wrappers.map((wrap) => {
+                return wrap.current.removeAttribute('style');
+            });
+            return true;
         }
     } else if (type === 'get') {
         if (refrence) {
@@ -155,11 +170,18 @@ queryMethods.css = function (queryData, refrence, type) {
                 }
             })
         } else {
-            return function (property, value) {
+            return new Proxy(function (property, value) {
                 return queryData.wrappers.map((wrap) => {
                     return css(wrap, property, value)
-                })
-            }
+                });
+            }, {
+                deleteProperty: function (target, name) {
+                    queryData.wrappers.map((wrap) => {
+                        return css(wrap, name, '');
+                    });
+                    return true;
+                }
+            })
         }
     }
 }
@@ -177,7 +199,6 @@ AQueryMethods.css = function () {
 // css/getProperty.js
 function getProperty(element, property) {
     property = getCssString(property);
-
     if (element.style[property]) return element.style[property];
 
     var styles = window.getComputedStyle(element);
@@ -193,11 +214,12 @@ function getPropertyString(property) {
 function setProperty(element, property, value) {
     property = getCssString(property);
 
-    var value2 = parseFloat(value);
-    var newValue = value2;
-    var originalValueRaw = getProperty(element, property);
-    var originalValue = parseFloat(originalValueRaw)
+
     if (typeof value === 'string' && value.length > 2 && value.charAt(1) === '=') {
+        var value2 = parseFloat(value);
+        var newValue = value2;
+        var originalValueRaw = getProperty(element, property);
+        var originalValue = parseFloat(originalValueRaw)
         var operator = value.charAt(0);
         var isFound = true;
 
@@ -224,16 +246,16 @@ function setProperty(element, property, value) {
                 break;
         }
         if (isFound) {
-            value = value.substr(2);
+            var ending = value.substr(value2.toString().length + 2);
+            if (!ending) {
+                ending = originalValueRaw.substr(originalValue.toString().length);
+            }
+            value = newValue + ending
         }
     }
 
-    var ending = value.substr(value2.toString().length);
-    if (!ending) {
-        ending = originalValueRaw.substr(originalValue.toString().length);
-    }
 
-    return element.style[property] = newValue + ending;
+    return element.style[property] = value;
 }
 
 function setPropertyRefrence(queryData, property, value) {
@@ -731,29 +753,31 @@ elementMethods.clone = function (elementData, refrence) {
     }
 }
 // methods/dimensions.js
-['width', 'height'].forEach((dimension, dim) => {
-    ['', 'inner', 'outer', 'whole'].forEach((extra, type) => {
+var types = ['', 'inner', 'outer', 'whole'];
+var dimensions = ['width', 'height'];
+dimensions.forEach((dimension, dim) => {
+    types.forEach((extra, type) => {
         var dimensionStr = dimension;
         if (extra) dimensionStr = dimension.charAt(0).toUpperCase() + dimension.substr(1);
         var str = extra + dimensionStr;
         elementMethods[str] = function (elementData, refrence, actiontype, setvalue) {
             var offset = 0;
             if (type) {
-                offset += parseFloat(css(elementData.proxy, dim ? 'padding-top' : 'padding-left'));
-                offset += parseFloat(css(elementData.proxy, dim ? 'padding-bottom' : 'padding-right'));
+                offset += parseFloat(css(elementData.current, dim ? 'padding-top' : 'padding-left'));
+                offset += parseFloat(css(elementData.current, dim ? 'padding-bottom' : 'padding-right'));
                 if (type >= 2) {
-                    offset += parseFloat(css(elementData.proxy, dim ? 'border-top-width' : 'border-left-width'));
-                    offset += parseFloat(css(elementData.proxy, dim ? 'border-bottom-width' : 'border-right-width'));
+                    offset += parseFloat(css(elementData.current, dim ? 'border-top-width' : 'border-left-width'));
+                    offset += parseFloat(css(elementData.current, dim ? 'border-bottom-width' : 'border-right-width'));
                     if (type === 3) {
-                        offset += parseFloat(css(elementData.proxy, dim ? 'margin-top' : 'margin-left'));
-                        offset += parseFloat(css(elementData.proxy, dim ? 'margin-bottom' : 'margin-right'));
+                        offset += parseFloat(css(elementData.current, dim ? 'margin-top' : 'margin-left'));
+                        offset += parseFloat(css(elementData.current, dim ? 'margin-bottom' : 'margin-right'));
                     }
                 }
             }
             if (setvalue && type) {
                 setvalue = parseFloat(setvalue) - offset;
             }
-            var value = parseFloat(css(elementData.proxy, dimension, setvalue));
+            var value = parseFloat(css(elementData.current, dimension, setvalue));
             return value + offset;
         }
     });
@@ -811,7 +835,7 @@ function generateElementEvent(eventType) {
                     if (name === 'length') {
                         return list.length;
                     } else
-                    if (typeof name === 'number') {
+                    if (!isNaN(name)) {
                         return list[name].listener;
                     }
                 },
@@ -819,7 +843,7 @@ function generateElementEvent(eventType) {
                     var list = elementData.listeners.filter((l) => {
                         return l.type === eventType
                     })
-                    if (typeof name === 'number') {
+                    if (!isNaN(name)) {
                         var l = list[name];
                         if (!l) return;
                         var ind = elementData.listeners.indexOf(l);
@@ -886,7 +910,7 @@ function generateQueryEvent(eventType) {
                     if (name === 'length') {
                         return list.listeners.length;
                     } else
-                    if (typeof name === 'number') {
+                    if (!isNaN(name)) {
                         return list.listeners[name].listener;
                     }
                 },
@@ -894,7 +918,7 @@ function generateQueryEvent(eventType) {
                     var list = queryData.listeners.filter((l) => {
                         return l.type === eventType
                     })
-                    if (typeof name === 'number') {
+                    if (!isNaN(name)) {
                         var l = list[name];
                         if (!l) return;
                         var ind = queryData.listeners.indexOf(l);
@@ -959,7 +983,7 @@ elementMethods.on = elementMethods.addEventListener = function (elementData, ref
                 if (name === 'length') {
                     return elementData.listeners.length;
                 } else
-                if (typeof name === 'number') {
+                if (!isNaN(name)) {
                     return elementData.listeners[name].listener;
                 } else {
                     var newList = []
@@ -970,7 +994,7 @@ elementMethods.on = elementMethods.addEventListener = function (elementData, ref
                     })
                     return new Proxy(newList, {
                         deleteProperty: function (target, name) {
-                            if (typeof name === 'number') {
+                            if (!isNaN(name)) {
                                 var l = newList[name];
                                 if (!l) return;
                                 l = l._listenerData
@@ -984,7 +1008,7 @@ elementMethods.on = elementMethods.addEventListener = function (elementData, ref
                 }
             },
             deleteProperty: function (target, name) {
-                if (typeof name === 'number') {
+                if (!isNaN(name)) {
                     var l = elementData.listeners[name];
                     if (!l) return;
                     elementData.listeners.splice(name, 1);
@@ -1049,7 +1073,7 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                 if (name === 'length') {
                     return queryData.listeners.length;
                 } else
-                if (typeof name === 'number') {
+                if (!isNaN(name)) {
                     return queryData.listeners[name].listener;
                 } else {
                     var newList = []
@@ -1086,7 +1110,7 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                 }
             },
             deleteProperty: function (target, name) {
-                if (typeof name === 'number') {
+                if (!isNaN(name)) {
                     var l = queryData.listeners[name];
                     if (!l) return;
                     queryData.listeners.splice(name, 1);
@@ -1355,7 +1379,8 @@ function Query(nodes, selector) {
                 name = name.substr(1);
                 refrence = true;
             }
-            if (typeof name === 'number' && object.nodes[name]) {
+
+            if (!isNaN(name) && object.nodes[name]) {
                 return refrence ? object.nodes[name] : object.wrappers[name];
             }
 
@@ -1404,9 +1429,8 @@ function createMain() {
             }
             if (AQueryMethods[name]) {
                 return AQueryMethods[name](refrence, 'get', undefined, name)
-            } else
-            if (selectCache[name]) {
-                return selectCache[name];
+            } else {
+                return document[name];
             }
         },
         set: function (target, name, value) {
@@ -1417,6 +1441,8 @@ function createMain() {
             }
             if (AQueryMethods[name]) {
                 return AQueryMethods[name](refrence, 'set', value, name)
+            } else {
+                return document[name] = value;
             }
         },
         deleteProperty: function (target, name) {
@@ -1427,6 +1453,8 @@ function createMain() {
             }
             if (AQueryMethods[name]) {
                 return AQueryMethods[name](refrence, 'delete', undefined, name)
+            } else {
+                return delete document[name];
             }
         }
     });

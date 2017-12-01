@@ -37,7 +37,7 @@ function generateElementEvent(eventType) {
                     if (name === 'length') {
                         return list.length;
                     } else
-                    if (typeof name === 'number') {
+                    if (!isNaN(name)) {
                         return list[name].listener;
                     }
                 },
@@ -45,7 +45,7 @@ function generateElementEvent(eventType) {
                     var list = elementData.listeners.filter((l) => {
                         return l.type === eventType
                     })
-                    if (typeof name === 'number') {
+                    if (!isNaN(name)) {
                         var l = list[name];
                         if (!l) return;
                         var ind = elementData.listeners.indexOf(l);
@@ -112,7 +112,7 @@ function generateQueryEvent(eventType) {
                     if (name === 'length') {
                         return list.listeners.length;
                     } else
-                    if (typeof name === 'number') {
+                    if (!isNaN(name)) {
                         return list.listeners[name].listener;
                     }
                 },
@@ -120,7 +120,7 @@ function generateQueryEvent(eventType) {
                     var list = queryData.listeners.filter((l) => {
                         return l.type === eventType
                     })
-                    if (typeof name === 'number') {
+                    if (!isNaN(name)) {
                         var l = list[name];
                         if (!l) return;
                         var ind = queryData.listeners.indexOf(l);

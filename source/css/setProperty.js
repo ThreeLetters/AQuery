@@ -1,11 +1,12 @@
 function setProperty(element, property, value) {
     property = getCssString(property);
 
-    var value2 = parseFloat(value);
-    var newValue = value2;
-    var originalValueRaw = getProperty(element, property);
-    var originalValue = parseFloat(originalValueRaw)
+
     if (typeof value === 'string' && value.length > 2 && value.charAt(1) === '=') {
+        var value2 = parseFloat(value);
+        var newValue = value2;
+        var originalValueRaw = getProperty(element, property);
+        var originalValue = parseFloat(originalValueRaw)
         var operator = value.charAt(0);
         var isFound = true;
 
@@ -32,16 +33,16 @@ function setProperty(element, property, value) {
                 break;
         }
         if (isFound) {
-            value = value.substr(2);
+            var ending = value.substr(value2.toString().length + 2);
+            if (!ending) {
+                ending = originalValueRaw.substr(originalValue.toString().length);
+            }
+            value = newValue + ending
         }
     }
 
-    var ending = value.substr(value2.toString().length);
-    if (!ending) {
-        ending = originalValueRaw.substr(originalValue.toString().length);
-    }
 
-    return element.style[property] = newValue + ending;
+    return element.style[property] = value;
 }
 
 function setPropertyRefrence(queryData, property, value) {

@@ -18,7 +18,8 @@ function Query(nodes, selector) {
                 name = name.substr(1);
                 refrence = true;
             }
-            if (typeof name === 'number' && object.nodes[name]) {
+
+            if (!isNaN(name) && object.nodes[name]) {
                 return refrence ? object.nodes[name] : object.wrappers[name];
             }
 

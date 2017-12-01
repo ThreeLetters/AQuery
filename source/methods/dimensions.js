@@ -1,26 +1,28 @@
-['width', 'height'].forEach((dimension, dim) => {
-    ['', 'inner', 'outer', 'whole'].forEach((extra, type) => {
+var types = ['', 'inner', 'outer', 'whole'];
+var dimensions = ['width', 'height'];
+dimensions.forEach((dimension, dim) => {
+    types.forEach((extra, type) => {
         var dimensionStr = dimension;
         if (extra) dimensionStr = dimension.charAt(0).toUpperCase() + dimension.substr(1);
         var str = extra + dimensionStr;
         elementMethods[str] = function (elementData, refrence, actiontype, setvalue) {
             var offset = 0;
             if (type) {
-                offset += parseFloat(css(elementData.proxy, dim ? 'padding-top' : 'padding-left'));
-                offset += parseFloat(css(elementData.proxy, dim ? 'padding-bottom' : 'padding-right'));
+                offset += parseFloat(css(elementData.current, dim ? 'padding-top' : 'padding-left'));
+                offset += parseFloat(css(elementData.current, dim ? 'padding-bottom' : 'padding-right'));
                 if (type >= 2) {
-                    offset += parseFloat(css(elementData.proxy, dim ? 'border-top-width' : 'border-left-width'));
-                    offset += parseFloat(css(elementData.proxy, dim ? 'border-bottom-width' : 'border-right-width'));
+                    offset += parseFloat(css(elementData.current, dim ? 'border-top-width' : 'border-left-width'));
+                    offset += parseFloat(css(elementData.current, dim ? 'border-bottom-width' : 'border-right-width'));
                     if (type === 3) {
-                        offset += parseFloat(css(elementData.proxy, dim ? 'margin-top' : 'margin-left'));
-                        offset += parseFloat(css(elementData.proxy, dim ? 'margin-bottom' : 'margin-right'));
+                        offset += parseFloat(css(elementData.current, dim ? 'margin-top' : 'margin-left'));
+                        offset += parseFloat(css(elementData.current, dim ? 'margin-bottom' : 'margin-right'));
                     }
                 }
             }
             if (setvalue && type) {
                 setvalue = parseFloat(setvalue) - offset;
             }
-            var value = parseFloat(css(elementData.proxy, dimension, setvalue));
+            var value = parseFloat(css(elementData.current, dimension, setvalue));
             return value + offset;
         }
     });

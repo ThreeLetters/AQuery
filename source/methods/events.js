@@ -29,7 +29,7 @@ elementMethods.on = elementMethods.addEventListener = function (elementData, ref
                 if (name === 'length') {
                     return elementData.listeners.length;
                 } else
-                if (typeof name === 'number') {
+                if (!isNaN(name)) {
                     return elementData.listeners[name].listener;
                 } else {
                     var newList = []
@@ -40,7 +40,7 @@ elementMethods.on = elementMethods.addEventListener = function (elementData, ref
                     })
                     return new Proxy(newList, {
                         deleteProperty: function (target, name) {
-                            if (typeof name === 'number') {
+                            if (!isNaN(name)) {
                                 var l = newList[name];
                                 if (!l) return;
                                 l = l._listenerData
@@ -54,7 +54,7 @@ elementMethods.on = elementMethods.addEventListener = function (elementData, ref
                 }
             },
             deleteProperty: function (target, name) {
-                if (typeof name === 'number') {
+                if (!isNaN(name)) {
                     var l = elementData.listeners[name];
                     if (!l) return;
                     elementData.listeners.splice(name, 1);
@@ -119,7 +119,7 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                 if (name === 'length') {
                     return queryData.listeners.length;
                 } else
-                if (typeof name === 'number') {
+                if (!isNaN(name)) {
                     return queryData.listeners[name].listener;
                 } else {
                     var newList = []
@@ -156,7 +156,7 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                 }
             },
             deleteProperty: function (target, name) {
-                if (typeof name === 'number') {
+                if (!isNaN(name)) {
                     var l = queryData.listeners[name];
                     if (!l) return;
                     queryData.listeners.splice(name, 1);
