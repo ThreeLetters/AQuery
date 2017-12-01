@@ -10,15 +10,32 @@ function proxy(parent, current, name) {
     }
     var type = typeof current;
     var iselement = type === 'object' && isElement(current);
+
+    var chain = false,
+        chainResults = [];
+
     var proxyOut = new Proxy(current, {
         get: function (target, name) {
+            var toReturn = undefined;
             if (name === 'elementData') {
                 return data;
-            } else
-            if (name.charAt(0) === '$') {
+            } else if (name === 'chain') {
+                chainResults = [];
+                chain = true;
+                return proxyout;
+            } else if (name === 'end') {
+                chain = false;
+                var result = chainResults[chainResults.length - 1]
+                return new Proxy(result, {
+                    get: function (target, name) {
+                        if (name === 'results') return chainResults;
+                        else return result[name];
+                    }
+                })
+            } else if (name.charAt(0) === '$') {
                 name = name.substr(1);
                 if (iselement && elementMethods[name]) {
-                    return elementMethods[name](data, true, 'get', undefined, name)
+                    toReturn = elementMethods[name](data, true, 'get', undefined, name)
                 } else {
                     if (!bindings[name]) bindings[name] = {
                         isRefrence: true,
@@ -32,25 +49,27 @@ function proxy(parent, current, name) {
                             });
                         }
                     };
-                    return bindings[name];
+                    toReturn = bindings[name];
                 }
             } else if (iselement && elementMethods[name]) {
-                return elementMethods[name](data, false, 'get', undefined, name)
+                toReturn = elementMethods[name](data, false, 'get', undefined, name)
             } else if (current[name]) {
                 if (typeof current[name] === 'object') {
                     if (!cache[name] || cache[name].elementData.current !== current[name]) {
                         cache[name] = isElement(current[name]) ? wrapElement(current[name]) : proxy(current, current[name], name);
                     }
-                    return cache[name];
-                } else return current[name];
+                    toReturn = cache[name];
+                } else toReturn = current[name];
             }
+            return chain ? proxyOut : toReturn
         },
         set: function (target, name, value) {
             var refrence = false;
+            var toReturn = undefined;
             if (name.charAt(0) === '$') name = name.substr(1), refrence = true;
 
             if (iselement && elementMethods[name]) {
-                elementMethods[name](data, true, 'set', value, name)
+                toReturn = elementMethods[name](data, true, 'set', value, name)
             } else {
                 if (value && value.isRefrence) {
                     if (bindings[name] !== value) {
@@ -70,16 +89,16 @@ function proxy(parent, current, name) {
                         current[name] = value;
                     }
                 }
+                toReturn = current[name];
             }
-        },
-        has: function (target, name) {
-
+            return chain ? proxyOut : toReturn
         },
         deleteProperty: function (target, name) {
+            var toReturn = undefined;
             if (name.charAt(0) === '$') {
                 name = name.substr(1);
                 if (iselement && elementMethods[name]) {
-                    elementMethods[name](data, true, 'delete', undefined, name)
+                    toReturn = elementMethods[name](data, true, 'delete', undefined, name)
                 } else {
                     if (bindings[name]) {
                         if (bindings[name].owner === current) {
@@ -93,11 +112,13 @@ function proxy(parent, current, name) {
                             bindings[name].attached[ind].pop();
                         }
                         bindings[name] = null;
-                    }
+                        toReturn = true;
+                    } else toReturn = false;
                 }
             } else if (iselement && elementMethods[name]) {
-                elementMethods[name](data, false, 'delete', undefined, name)
+                toReturn = elementMethods[name](data, false, 'delete', undefined, name)
             }
+            return chain ? proxyOut : toReturn
         }
     })
     data.proxy = proxyOut;

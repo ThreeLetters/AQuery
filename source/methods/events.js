@@ -8,11 +8,15 @@ elementMethods.on = elementMethods.addEventListener = function (elementData, ref
 
         return new Proxy(function (type, listener, options) {
             if (!listener) {
-                elementData.listeners.forEach((listener) => {
-                    if (listener.type === type) {
-                        listener.listener.apply(elementData.current, []);
-                    }
-                })
+                if (customEvents.indexOf(type) !== -1) {
+                    elementData.current[type]()
+                } else {
+                    elementData.listeners.forEach((listener) => {
+                        if (listener.type === type) {
+                            listener.listener.apply(elementData.current, []);
+                        }
+                    })
+                }
                 return;
             }
             listener._listenerData = listener._listenerData || {
@@ -74,9 +78,10 @@ elementMethods.on = elementMethods.addEventListener = function (elementData, ref
 }
 
 queryMethods.on = queryMethods.addEventListener = function (queryData, refrence, type) {
+    if (refrence && !queryData.selector) throw 'You cannot use refrence methods on a querylist with no selector.';
     if (type === 'delete') {
         queryData.listeners.forEach((listener) => {
-            queryData.wrappers.forEach((wrap) => {
+            queryData.nodes.forEach((wrap) => {
                 var data = wrap.elementData;
                 var index = data.listeners.indexOf(listener);
                 if (index !== -1) {
@@ -89,14 +94,20 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
     } else {
         return new Proxy(function (type, listener, options) {
             if (!listener) {
-                queryData.listeners.forEach((listener) => {
-                    if (listener.type === type) {
-                        queryData.wrappers.forEach((wrapper) => {
-                            if (wrapper.elementData.listeners.indexOf(listener) !== -1)
-                                listener.listener.apply(wrapper.elementData.current, []);
-                        })
-                    }
-                })
+                if (customEvents.indexOf(type) !== -1) {
+                    queryData.nodes.forEach((wrapper) => {
+                        wrapper.elementData.current[type]()
+                    })
+                } else {
+                    queryData.listeners.forEach((listener) => {
+                        if (listener.type === type) {
+                            queryData.nodes.forEach((wrapper) => {
+                                if (wrapper.elementData.listeners.indexOf(listener) !== -1)
+                                    listener.listener.apply(wrapper.elementData.current, []);
+                            })
+                        }
+                    })
+                }
                 return;
             }
             var listenerData = listener._listenerData = listener._listenerData || {
@@ -108,9 +119,9 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
             if (queryData.listeners.indexOf(listenerData) === -1)
                 queryData.listeners.push(listenerData)
             queryData.nodes.forEach((node, i) => {
-                var data = queryData.wrappers[i].elementData;
+                var data = node.elementData;
                 if (data.listeners.indexOf(listenerData) !== -1) return;
-                node.addEventListener(type, listener, options)
+                data.current.addEventListener(type, listener, options)
                 data.listeners.push(listenerData)
             });
             if (refrence && !listenerData.isRefrenceEvent) refrenceListeners.push(listenerData), listenerData.isRefrenceEvent = true;
@@ -142,7 +153,7 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                                     refrenceListeners.splice(ind, 1);
                                     l.isRefrenceEvent = false;
                                 }
-                                queryData.wrappers.forEach((wrap) => {
+                                queryData.nodes.forEach((wrap) => {
                                     var data = wrap.elementData;
                                     var index = data.listeners.indexOf(l);
                                     if (index !== -1) {
@@ -165,7 +176,7 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                         refrenceListeners.splice(ind, 1);
                         l.isRefrenceEvent = false;
                     }
-                    queryData.wrappers.forEach((wrap) => {
+                    queryData.nodes.forEach((wrap) => {
                         var data = wrap.elementData;
                         var index = data.listeners.indexOf(l);
                         if (index !== -1) {
@@ -182,7 +193,7 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                                 l.isRefrenceEvent = false;
                             }
                             elementData.current.removeEventListener(l.type, l.listener)
-                            queryData.wrappers.forEach((wrap) => {
+                            queryData.nodes.forEach((wrap) => {
                                 var data = wrap.elementData;
                                 var index = data.listeners.indexOf(l);
                                 if (index !== -1) {

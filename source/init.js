@@ -18,6 +18,9 @@ var elementMethods = {},
     },
     cssRefrences = {};
 
+var customEvents = ['blur', 'focus', 'keydown', 'keyup', 'keypress', 'resize', 'scroll', 'select', 'submit', 'click', 'dblclick', 'change', 'mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseout', 'mouseover', 'mouseup', 'contextmenu'];
+
+
 window.addEventListener('load', function () {
     var head = document.head || document.getElementsByTagName("head")[0];
     Head.nodes.forEach((node) => {

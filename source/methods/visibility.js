@@ -36,7 +36,7 @@ elementMethods.toggle = function (elementData) {
 queryMethods.show = function (queryData) {
     return function () {
         queryData.hideState = false;
-        queryData.wrappers.forEach((wrapper) => {
+        queryData.nodes.forEach((wrapper) => {
             show(wrapper.elementData)
         })
     }
@@ -44,7 +44,7 @@ queryMethods.show = function (queryData) {
 queryMethods.hide = function (queryData) {
     return function () {
         queryData.hideState = true;
-        queryData.wrappers.forEach((wrapper) => {
+        queryData.nodes.forEach((wrapper) => {
             hide(wrapper.elementData)
         })
     }
@@ -56,7 +56,7 @@ queryMethods.toggle = function (queryData) {
         } else {
             queryData.hideState = true;
         }
-        queryData.wrappers.forEach((wrapper) => {
+        queryData.nodes.forEach((wrapper) => {
             if (queryData.hideState) {
                 hide(wrapper.elementData)
             } else {

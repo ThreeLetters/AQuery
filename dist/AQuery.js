@@ -30,6 +30,9 @@ var elementMethods = {},
     },
     cssRefrences = {};
 
+var customEvents = ['blur', 'focus', 'keydown', 'keyup', 'keypress', 'resize', 'scroll', 'select', 'submit', 'click', 'dblclick', 'change', 'mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseout', 'mouseover', 'mouseup', 'contextmenu'];
+
+
 window.addEventListener('load', function () {
     var head = document.head || document.getElementsByTagName("head")[0];
     Head.nodes.forEach((node) => {
@@ -128,6 +131,7 @@ elementMethods.css = function (elementData, refrence, type) {
 }
 
 queryMethods.css = function (queryData, refrence, type) {
+    if (refrence && !queryData.selector) throw 'You cannot use refrence methods on a querylist with no selector.';
     if (type === 'delete') {
         if (refrence) {
             if (cssRefrences[queryData.selector]) {
@@ -137,7 +141,7 @@ queryMethods.css = function (queryData, refrence, type) {
             }
             return false;
         } else {
-            queryData.wrappers.map((wrap) => {
+            queryData.nodes.map((wrap) => {
                 return wrap.current.removeAttribute('style');
             });
             return true;
@@ -171,12 +175,12 @@ queryMethods.css = function (queryData, refrence, type) {
             })
         } else {
             return new Proxy(function (property, value) {
-                return queryData.wrappers.map((wrap) => {
+                return queryData.nodes.map((wrap) => {
                     return css(wrap, property, value)
                 });
             }, {
                 deleteProperty: function (target, name) {
-                    queryData.wrappers.map((wrap) => {
+                    queryData.nodes.map((wrap) => {
                         return css(wrap, name, '');
                     });
                     return true;
@@ -854,10 +858,11 @@ function generateElementEvent(eventType) {
 
 function generateQueryEvent(eventType) {
     return function (queryData, refrence, type) {
+        if (refrence && !queryData.selector) throw 'You cannot use refrence methods on a querylist with no selector.';
         if (type === 'delete') {
             queryData.listeners = queryData.listeners.filter((l) => {
                 if (l.type === eventType) {
-                    queryData.wrappers.forEach((wrap) => {
+                    queryData.nodes.forEach((wrap) => {
                         var data = wrap.elementData;
                         var index = data.listeners.indexOf(listener);
                         if (index !== -1) {
@@ -874,8 +879,8 @@ function generateQueryEvent(eventType) {
             return new Proxy(function (listener, options) {
                 if (!listener) {
 
-                    queryData.nodes.forEach((element) => {
-                        element[eventType]();
+                    queryData.nodes.forEach((wrapper) => {
+                        wrapper.elementData.current[eventType]();
                     })
 
                     return;
@@ -889,9 +894,9 @@ function generateQueryEvent(eventType) {
                 if (queryData.listeners.indexOf(listenerData) === -1)
                     queryData.listeners.push(listenerData)
                 queryData.nodes.forEach((node, i) => {
-                    var data = queryData.wrappers[i].elementData;
+                    var data = node.elementData;
                     if (data.listeners.indexOf(listenerData) !== -1) return;
-                    node.addEventListener(eventType, listener, options)
+                    data.current.addEventListener(eventType, listener, options)
                     data.listeners.push(listenerData)
                 });
                 if (refrence && !listenerData.isRefrenceEvent) refrenceListeners.push(listenerData), listenerData.isRefrenceEvent = true;
@@ -921,7 +926,7 @@ function generateQueryEvent(eventType) {
                             refrenceListeners.splice(ind, 1);
                             l.isRefrenceEvent = false;
                         }
-                        queryData.wrappers.forEach((wrap) => {
+                        queryData.nodes.forEach((wrap) => {
                             var data = wrap.elementData;
                             var index = data.listeners.indexOf(l);
                             if (index !== -1) {
@@ -937,7 +942,6 @@ function generateQueryEvent(eventType) {
 }
 
 
-var customEvents = ['blur', 'focus', 'keydown', 'keyup', 'keypress', 'resize', 'scroll', 'select', 'submit', 'click', 'dblclick', 'change', 'error', 'mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseout', 'mouseover', 'mouseup', 'contextmenu'];
 
 customEvents.forEach((event) => {
     elementMethods[event] = generateElementEvent(event)
@@ -955,11 +959,15 @@ elementMethods.on = elementMethods.addEventListener = function (elementData, ref
 
         return new Proxy(function (type, listener, options) {
             if (!listener) {
-                elementData.listeners.forEach((listener) => {
-                    if (listener.type === type) {
-                        listener.listener.apply(elementData.current, []);
-                    }
-                })
+                if (customEvents.indexOf(type) !== -1) {
+                    elementData.current[type]()
+                } else {
+                    elementData.listeners.forEach((listener) => {
+                        if (listener.type === type) {
+                            listener.listener.apply(elementData.current, []);
+                        }
+                    })
+                }
                 return;
             }
             listener._listenerData = listener._listenerData || {
@@ -1021,9 +1029,10 @@ elementMethods.on = elementMethods.addEventListener = function (elementData, ref
 }
 
 queryMethods.on = queryMethods.addEventListener = function (queryData, refrence, type) {
+    if (refrence && !queryData.selector) throw 'You cannot use refrence methods on a querylist with no selector.';
     if (type === 'delete') {
         queryData.listeners.forEach((listener) => {
-            queryData.wrappers.forEach((wrap) => {
+            queryData.nodes.forEach((wrap) => {
                 var data = wrap.elementData;
                 var index = data.listeners.indexOf(listener);
                 if (index !== -1) {
@@ -1036,14 +1045,20 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
     } else {
         return new Proxy(function (type, listener, options) {
             if (!listener) {
-                queryData.listeners.forEach((listener) => {
-                    if (listener.type === type) {
-                        queryData.wrappers.forEach((wrapper) => {
-                            if (wrapper.elementData.listeners.indexOf(listener) !== -1)
-                                listener.listener.apply(wrapper.elementData.current, []);
-                        })
-                    }
-                })
+                if (customEvents.indexOf(type) !== -1) {
+                    queryData.nodes.forEach((wrapper) => {
+                        wrapper.elementData.current[type]()
+                    })
+                } else {
+                    queryData.listeners.forEach((listener) => {
+                        if (listener.type === type) {
+                            queryData.nodes.forEach((wrapper) => {
+                                if (wrapper.elementData.listeners.indexOf(listener) !== -1)
+                                    listener.listener.apply(wrapper.elementData.current, []);
+                            })
+                        }
+                    })
+                }
                 return;
             }
             var listenerData = listener._listenerData = listener._listenerData || {
@@ -1055,9 +1070,9 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
             if (queryData.listeners.indexOf(listenerData) === -1)
                 queryData.listeners.push(listenerData)
             queryData.nodes.forEach((node, i) => {
-                var data = queryData.wrappers[i].elementData;
+                var data = node.elementData;
                 if (data.listeners.indexOf(listenerData) !== -1) return;
-                node.addEventListener(type, listener, options)
+                data.current.addEventListener(type, listener, options)
                 data.listeners.push(listenerData)
             });
             if (refrence && !listenerData.isRefrenceEvent) refrenceListeners.push(listenerData), listenerData.isRefrenceEvent = true;
@@ -1089,7 +1104,7 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                                     refrenceListeners.splice(ind, 1);
                                     l.isRefrenceEvent = false;
                                 }
-                                queryData.wrappers.forEach((wrap) => {
+                                queryData.nodes.forEach((wrap) => {
                                     var data = wrap.elementData;
                                     var index = data.listeners.indexOf(l);
                                     if (index !== -1) {
@@ -1112,7 +1127,7 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                         refrenceListeners.splice(ind, 1);
                         l.isRefrenceEvent = false;
                     }
-                    queryData.wrappers.forEach((wrap) => {
+                    queryData.nodes.forEach((wrap) => {
                         var data = wrap.elementData;
                         var index = data.listeners.indexOf(l);
                         if (index !== -1) {
@@ -1129,7 +1144,7 @@ queryMethods.on = queryMethods.addEventListener = function (queryData, refrence,
                                 l.isRefrenceEvent = false;
                             }
                             elementData.current.removeEventListener(l.type, l.listener)
-                            queryData.wrappers.forEach((wrap) => {
+                            queryData.nodes.forEach((wrap) => {
                                 var data = wrap.elementData;
                                 var index = data.listeners.indexOf(l);
                                 if (index !== -1) {
@@ -1165,8 +1180,39 @@ elementMethods.after = function (elementData) {
         return insertAfter(elementData.proxy, element);
     }
 }
+// methods/loop.js
+queryMethods.forEach = queryMethods.each = function (queryData, refrence, type) {
+    return function (call) {
+        queryData.nodes.forEach(call);
+    }
+}
+
+queryMethods.every = queryMethods.each = function (queryData, refrence, type) {
+    return function (call) {
+        return queryData.nodes.every(call);
+    }
+}
+
+queryMethods.map = function (queryData, refrence, type) {
+    return function (call) {
+        var newArray = [];
+        queryData.nodes.forEach((node, index) => {
+            var results = call(node, index);
+
+            if (results === false || results === undefined) return;
+            newArray.push(isElement(results) ? results : node);
+        });
+        return Query(newArray, refrence ? queryData.selector : null);
+    }
+}
 // methods/scroll.js
 // methods/serialize.js
+// methods/shortcuts.js
+var shortcuts = {
+    text: 'textContent',
+    html: 'innerHTML'
+
+}
 // methods/visibility.js
 function show(elementData) {
     if (elementData.current.style.display === 'none') elementData.current.style.display = elementData.defaultDisplay || '';
@@ -1206,7 +1252,7 @@ elementMethods.toggle = function (elementData) {
 queryMethods.show = function (queryData) {
     return function () {
         queryData.hideState = false;
-        queryData.wrappers.forEach((wrapper) => {
+        queryData.nodes.forEach((wrapper) => {
             show(wrapper.elementData)
         })
     }
@@ -1214,7 +1260,7 @@ queryMethods.show = function (queryData) {
 queryMethods.hide = function (queryData) {
     return function () {
         queryData.hideState = true;
-        queryData.wrappers.forEach((wrapper) => {
+        queryData.nodes.forEach((wrapper) => {
             hide(wrapper.elementData)
         })
     }
@@ -1226,7 +1272,7 @@ queryMethods.toggle = function (queryData) {
         } else {
             queryData.hideState = true;
         }
-        queryData.wrappers.forEach((wrapper) => {
+        queryData.nodes.forEach((wrapper) => {
             if (queryData.hideState) {
                 hide(wrapper.elementData)
             } else {
@@ -1248,15 +1294,32 @@ function proxy(parent, current, name) {
     }
     var type = typeof current;
     var iselement = type === 'object' && isElement(current);
+
+    var chain = false,
+        chainResults = [];
+
     var proxyOut = new Proxy(current, {
         get: function (target, name) {
+            var toReturn = undefined;
             if (name === 'elementData') {
                 return data;
-            } else
-            if (name.charAt(0) === '$') {
+            } else if (name === 'chain') {
+                chainResults = [];
+                chain = true;
+                return proxyout;
+            } else if (name === 'end') {
+                chain = false;
+                var result = chainResults[chainResults.length - 1]
+                return new Proxy(result, {
+                    get: function (target, name) {
+                        if (name === 'results') return chainResults;
+                        else return result[name];
+                    }
+                })
+            } else if (name.charAt(0) === '$') {
                 name = name.substr(1);
                 if (iselement && elementMethods[name]) {
-                    return elementMethods[name](data, true, 'get', undefined, name)
+                    toReturn = elementMethods[name](data, true, 'get', undefined, name)
                 } else {
                     if (!bindings[name]) bindings[name] = {
                         isRefrence: true,
@@ -1270,25 +1333,27 @@ function proxy(parent, current, name) {
                             });
                         }
                     };
-                    return bindings[name];
+                    toReturn = bindings[name];
                 }
             } else if (iselement && elementMethods[name]) {
-                return elementMethods[name](data, false, 'get', undefined, name)
+                toReturn = elementMethods[name](data, false, 'get', undefined, name)
             } else if (current[name]) {
                 if (typeof current[name] === 'object') {
                     if (!cache[name] || cache[name].elementData.current !== current[name]) {
                         cache[name] = isElement(current[name]) ? wrapElement(current[name]) : proxy(current, current[name], name);
                     }
-                    return cache[name];
-                } else return current[name];
+                    toReturn = cache[name];
+                } else toReturn = current[name];
             }
+            return chain ? proxyOut : toReturn
         },
         set: function (target, name, value) {
             var refrence = false;
+            var toReturn = undefined;
             if (name.charAt(0) === '$') name = name.substr(1), refrence = true;
 
             if (iselement && elementMethods[name]) {
-                elementMethods[name](data, true, 'set', value, name)
+                toReturn = elementMethods[name](data, true, 'set', value, name)
             } else {
                 if (value && value.isRefrence) {
                     if (bindings[name] !== value) {
@@ -1308,16 +1373,16 @@ function proxy(parent, current, name) {
                         current[name] = value;
                     }
                 }
+                toReturn = current[name];
             }
-        },
-        has: function (target, name) {
-
+            return chain ? proxyOut : toReturn
         },
         deleteProperty: function (target, name) {
+            var toReturn = undefined;
             if (name.charAt(0) === '$') {
                 name = name.substr(1);
                 if (iselement && elementMethods[name]) {
-                    elementMethods[name](data, true, 'delete', undefined, name)
+                    toReturn = elementMethods[name](data, true, 'delete', undefined, name)
                 } else {
                     if (bindings[name]) {
                         if (bindings[name].owner === current) {
@@ -1331,11 +1396,13 @@ function proxy(parent, current, name) {
                             bindings[name].attached[ind].pop();
                         }
                         bindings[name] = null;
-                    }
+                        toReturn = true;
+                    } else toReturn = false;
                 }
             } else if (iselement && elementMethods[name]) {
-                elementMethods[name](data, false, 'delete', undefined, name)
+                toReturn = elementMethods[name](data, false, 'delete', undefined, name)
             }
+            return chain ? proxyOut : toReturn
         }
     })
     data.proxy = proxyOut;
@@ -1343,6 +1410,7 @@ function proxy(parent, current, name) {
 }
 // interface/elementWrapper.js
 function wrapElement(element) {
+    if (element.elementData) return element;
     if (!element.id) {
         element.id = createId()
     }
@@ -1354,18 +1422,36 @@ function wrapElement(element) {
 // interface/queryWrapper.js
 function Query(nodes, selector) {
     var object = {
-        nodes: nodes,
-        wrappers: [],
+        nodes: nodes.map((node) => {
+            return wrapElement(node);
+        }),
         selector: selector,
         selectorSplit: selector.split(/[> ]/),
         listeners: []
     }
-    nodes.forEach((node, i) => {
-        object.wrappers[i] = wrapElement(node);
-    })
-    return new Proxy(object, {
+
+    var chain = false;
+    var chainResults = [];
+
+    var proxyout = new Proxy(object.nodes, {
         get: function (target, name) {
-            if (name === 'length') return nodes.length;
+            if (name === 'length') return object.nodes.length;
+            else if (name === 'chain') {
+                chainResults = [];
+                chain = true;
+                return proxyout;
+            } else if (name === 'end') {
+                chain = false;
+                var result = chainResults[chainResults.length - 1]
+                return new Proxy(result, {
+                    get: function (target, name) {
+                        if (name === 'results') return chainResults;
+                        else return result[name];
+                    }
+                })
+            }
+
+            var toReturn = undefined;
 
             var refrence = false;
             if (name.charAt(0) === '$') {
@@ -1374,11 +1460,11 @@ function Query(nodes, selector) {
             }
 
             if (!isNaN(name) && object.nodes[name]) {
-                return refrence ? object.nodes[name] : object.wrappers[name];
-            }
-
-            if (queryMethods[name]) return queryMethods[name](object, refrence, 'get', undefined, name);
-            else if (nodes.length === 1) return object.nodes[0][(refrence ? '$' : '') + name];
+                toReturn = refrence ? object.nodes[name].elementData.current : object.nodes[name];
+            } else
+            if (queryMethods[name]) toReturn = queryMethods[name](object, refrence, 'get', undefined, name);
+            else if (nodes.length === 1) toReturn = object.nodes[0][(refrence ? '$' : '') + name];
+            return chain ? proxyout : toReturn;
         },
         set: function (target, name, value) {
             var refrence = false;
@@ -1386,7 +1472,9 @@ function Query(nodes, selector) {
                 name = name.substr(1);
                 refrence = true;
             }
-            if (queryMethods[name]) return queryMethods[name](object, refrence, 'set', value, name);
+            var toReturn = undefined;
+            if (queryMethods[name]) toReturn = queryMethods[name](object, refrence, 'set', value, name);
+            return chain ? proxyout : toReturn;
         },
         deleteProperty: function (target, name) {
             var refrence = false;
@@ -1394,9 +1482,12 @@ function Query(nodes, selector) {
                 name = name.substr(1);
                 refrence = true;
             }
-            if (queryMethods[name]) return queryMethods[name](object, refrence, 'delete', undefined, name);
+            var toReturn = undefined;
+            if (queryMethods[name]) toReturn = queryMethods[name](object, refrence, 'delete', undefined, name);
+            return chain ? proxyout : toReturn;
         }
     })
+    return proxyout;
 }
 // interface/mainInterface.js
 function createMain() {
@@ -1406,11 +1497,14 @@ function createMain() {
             var elements = select(selector);
             return Query(elements, selector)
         } else if (typeof selector === 'object') {
-
-            if (selector.nodeType === 9) {
-                return proxyout;
-            } else if (selector.nodeType === 1) {
-                return wrapElement(selector);
+            if (Array.isArray(selector)) {
+                return Query(selector, null)
+            } else {
+                if (selector.nodeType === 9) {
+                    return proxyout;
+                } else if (selector.nodeType === 1) {
+                    return wrapElement(selector);
+                }
             }
         }
     }, {

@@ -55,6 +55,7 @@ elementMethods.css = function (elementData, refrence, type) {
 }
 
 queryMethods.css = function (queryData, refrence, type) {
+    if (refrence && !queryData.selector) throw 'You cannot use refrence methods on a querylist with no selector.';
     if (type === 'delete') {
         if (refrence) {
             if (cssRefrences[queryData.selector]) {
@@ -64,7 +65,7 @@ queryMethods.css = function (queryData, refrence, type) {
             }
             return false;
         } else {
-            queryData.wrappers.map((wrap) => {
+            queryData.nodes.map((wrap) => {
                 return wrap.current.removeAttribute('style');
             });
             return true;
@@ -98,12 +99,12 @@ queryMethods.css = function (queryData, refrence, type) {
             })
         } else {
             return new Proxy(function (property, value) {
-                return queryData.wrappers.map((wrap) => {
+                return queryData.nodes.map((wrap) => {
                     return css(wrap, property, value)
                 });
             }, {
                 deleteProperty: function (target, name) {
-                    queryData.wrappers.map((wrap) => {
+                    queryData.nodes.map((wrap) => {
                         return css(wrap, name, '');
                     });
                     return true;

@@ -5,11 +5,14 @@ function createMain() {
             var elements = select(selector);
             return Query(elements, selector)
         } else if (typeof selector === 'object') {
-
-            if (selector.nodeType === 9) {
-                return proxyout;
-            } else if (selector.nodeType === 1) {
-                return wrapElement(selector);
+            if (Array.isArray(selector)) {
+                return Query(selector, null)
+            } else {
+                if (selector.nodeType === 9) {
+                    return proxyout;
+                } else if (selector.nodeType === 1) {
+                    return wrapElement(selector);
+                }
             }
         }
     }, {

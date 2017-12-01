@@ -56,10 +56,11 @@ function generateElementEvent(eventType) {
 
 function generateQueryEvent(eventType) {
     return function (queryData, refrence, type) {
+        if (refrence && !queryData.selector) throw 'You cannot use refrence methods on a querylist with no selector.';
         if (type === 'delete') {
             queryData.listeners = queryData.listeners.filter((l) => {
                 if (l.type === eventType) {
-                    queryData.wrappers.forEach((wrap) => {
+                    queryData.nodes.forEach((wrap) => {
                         var data = wrap.elementData;
                         var index = data.listeners.indexOf(listener);
                         if (index !== -1) {
@@ -76,8 +77,8 @@ function generateQueryEvent(eventType) {
             return new Proxy(function (listener, options) {
                 if (!listener) {
 
-                    queryData.nodes.forEach((element) => {
-                        element[eventType]();
+                    queryData.nodes.forEach((wrapper) => {
+                        wrapper.elementData.current[eventType]();
                     })
 
                     return;
@@ -91,9 +92,9 @@ function generateQueryEvent(eventType) {
                 if (queryData.listeners.indexOf(listenerData) === -1)
                     queryData.listeners.push(listenerData)
                 queryData.nodes.forEach((node, i) => {
-                    var data = queryData.wrappers[i].elementData;
+                    var data = node.elementData;
                     if (data.listeners.indexOf(listenerData) !== -1) return;
-                    node.addEventListener(eventType, listener, options)
+                    data.current.addEventListener(eventType, listener, options)
                     data.listeners.push(listenerData)
                 });
                 if (refrence && !listenerData.isRefrenceEvent) refrenceListeners.push(listenerData), listenerData.isRefrenceEvent = true;
@@ -123,7 +124,7 @@ function generateQueryEvent(eventType) {
                             refrenceListeners.splice(ind, 1);
                             l.isRefrenceEvent = false;
                         }
-                        queryData.wrappers.forEach((wrap) => {
+                        queryData.nodes.forEach((wrap) => {
                             var data = wrap.elementData;
                             var index = data.listeners.indexOf(l);
                             if (index !== -1) {
@@ -139,7 +140,6 @@ function generateQueryEvent(eventType) {
 }
 
 
-var customEvents = ['blur', 'focus', 'keydown', 'keyup', 'keypress', 'resize', 'scroll', 'select', 'submit', 'click', 'dblclick', 'change', 'error', 'mousedown', 'mouseenter', 'mouseleave', 'mousemove', 'mouseout', 'mouseover', 'mouseup', 'contextmenu'];
 
 customEvents.forEach((event) => {
     elementMethods[event] = generateElementEvent(event)

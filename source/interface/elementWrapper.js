@@ -1,4 +1,5 @@
 function wrapElement(element) {
+    if (element.elementData) return element;
     if (!element.id) {
         element.id = createId()
     }
