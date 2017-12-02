@@ -54,9 +54,35 @@ function Query(nodes, selector) {
 
             } else if (object.nodes.length === 1) toReturn = object.nodes[0][(refrence ? '$' : '') + name];
             else {
-                toReturn = object.nodes.map((node) => {
+
+                function proxyList(array) {
+                    return new Proxy(array, {
+                        get: function (target, name) {
+                            if (!isNaN(name)) {
+                                return array[name];
+                            } else if (name === 'length') {
+                                return array.length;
+                            } else {
+                                return proxyList(array.map((node) => {
+                                    return node[name];
+                                }))
+                            }
+                        },
+                        set: function (target, name, value) {
+                            return proxyList(array.map((node) => {
+                                return node[name] = value;
+                            }))
+                        },
+                        delete: function (target, name, value) {
+                            return proxyList(array.map((node) => {
+                                return delete node[name];
+                            }))
+                        }
+                    })
+                }
+                toReturn = proxyList(object.nodes.map((node) => {
                     return node[(refrence ? '$' : '') + name];
-                })
+                }));
             }
             return chain ? proxyout : toReturn;
         },
