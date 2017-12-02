@@ -31,7 +31,7 @@ function proxy(parent, current, name) {
                         if (name === 'results') return chainResults;
                         else return result[name];
                     }
-                })
+                });
             } else if (name.charAt(0) === '$') {
                 name = name.substr(1);
                 if (iselement && elementMethods[name]) {
@@ -45,7 +45,9 @@ function proxy(parent, current, name) {
                         update: function (value) {
                             this.owner[this.name] = value;
                             this.attached.forEach((obj) => {
-                                obj.current[this.name] = value;
+                                for (var name in obj.bindings) {
+                                    if (obj.bindings[name] === this) obj.current[name] = value;
+                                }
                             });
                         }
                     };
@@ -109,7 +111,7 @@ function proxy(parent, current, name) {
                         } else {
                             var ind = bindings[name].attached.indexOf(data);
                             bindings[name].attached[ind] = bindings[name].attached[bindings[name].attached.length - 1]
-                            bindings[name].attached[ind].pop();
+                            bindings[name].attached.pop();
                         }
                         bindings[name] = null;
                         toReturn = true;

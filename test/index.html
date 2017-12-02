@@ -10,16 +10,21 @@
     <div class='clickclass' id='test'>
 
     </div>
+    <div class='clickclass' id='something'>
+
+    </div>
 
     <script>
         var el = $('#test')
         el.style.backgroundColor = 'blue';
 
+        $('#something').style.backgroundColor = 'green';
+
+
         $('.clickclass').$css({
             width: '100px',
             height: '100px'
         });
-
     </script>
 </body>
 
