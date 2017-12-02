@@ -5,7 +5,7 @@
  License: MIT (https://github.com/ThreeLetters/AQuery/blob/master/LICENSE)
  Source: https://github.com/ThreeLetters/AQuery
  Build: v0.0.1
- Built on: 01/12/2017
+ Built on: 02/12/2017
 */
 
 (function (window) {
@@ -744,6 +744,27 @@ AQueryMethods.append = AQueryMethods.appendChild = function () {
         document.body.appendChild(data.current);
     }
 }
+// methods/attr.js
+ elementMethods.attr = function (elementData, refrence, type, value) {
+
+     return new Proxy(function (name, value) {
+
+         if (value !== undefined) {
+             elementData.current.setAttribute(name, value)
+             return value;
+         } else {
+             return elementData.current.getAttribute(name);
+         }
+     }, {
+         deleteProperty: function (target, name) {
+             elementData.current.removeAttribute(name);
+             return true;
+         }
+     })
+
+ }
+
+ queryMethods.attr = true
 // methods/clone.js
 elementMethods.clone = function (elementData, refrence) {
     return function (cloneEvents) {
@@ -1210,8 +1231,22 @@ queryMethods.map = function (queryData, refrence, type) {
 // methods/shortcuts.js
 var shortcuts = {
     text: 'textContent',
-    html: 'innerHTML'
+    html: 'innerHTML',
+    val: 'value'
+}
 
+for (var to in shortcuts) {
+    (function (to, from) {
+        elementMethods[to] = function (elementData, refrence, type, value) {
+            if (type === 'get') {
+                return elementData.current[from];
+            } else if (type === 'set') {
+                return elementData.current[from] = value;
+            } else if (type === 'delete') {
+                return delete elementData.current[from];
+            }
+        }
+    })(to, shortcuts[to])
 }
 // methods/visibility.js
 function show(elementData) {
@@ -1462,8 +1497,24 @@ function Query(nodes, selector) {
             if (!isNaN(name) && object.nodes[name]) {
                 toReturn = refrence ? object.nodes[name].elementData.current : object.nodes[name];
             } else
-            if (queryMethods[name]) toReturn = queryMethods[name](object, refrence, 'get', undefined, name);
-            else if (nodes.length === 1) toReturn = object.nodes[0][(refrence ? '$' : '') + name];
+            if (queryMethods[name]) {
+                if (queryMethods[name] === true) {
+                    toReturn = function () {
+                        var returnValue = object.nodes.map((node) => {
+                            return node[(refrence ? '$' : '') + name].apply(node, arguments);
+                        });
+                        return chain ? proxyout : returnValue;
+                    }
+                } else {
+                    toReturn = queryMethods[name](object, refrence, 'get', undefined, name);
+                }
+
+            } else if (object.nodes.length === 1) toReturn = object.nodes[0][(refrence ? '$' : '') + name];
+            else {
+                toReturn = object.nodes.map((node) => {
+                    return node[(refrence ? '$' : '') + name];
+                })
+            }
             return chain ? proxyout : toReturn;
         },
         set: function (target, name, value) {
@@ -1474,6 +1525,13 @@ function Query(nodes, selector) {
             }
             var toReturn = undefined;
             if (queryMethods[name]) toReturn = queryMethods[name](object, refrence, 'set', value, name);
+            else if (object.nodes.length === 1) {
+                toReturn = object.nodes[0][(refrence ? '$' : '') + name] = value;
+            } else {
+                toReturn = object.nodes.map((node) => {
+                    return node[(refrence ? '$' : '') + name] = value;
+                })
+            }
             return chain ? proxyout : toReturn;
         },
         deleteProperty: function (target, name) {
@@ -1484,6 +1542,13 @@ function Query(nodes, selector) {
             }
             var toReturn = undefined;
             if (queryMethods[name]) toReturn = queryMethods[name](object, refrence, 'delete', undefined, name);
+            else if (object.nodes.length === 1) {
+                toReturn = delete object.nodes[0][(refrence ? '$' : '') + name];
+            } else {
+                toReturn = object.nodes.map((node) => {
+                    return delete node[(refrence ? '$' : '') + name];
+                })
+            }
             return chain ? proxyout : toReturn;
         }
     })

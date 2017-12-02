@@ -40,8 +40,24 @@ function Query(nodes, selector) {
             if (!isNaN(name) && object.nodes[name]) {
                 toReturn = refrence ? object.nodes[name].elementData.current : object.nodes[name];
             } else
-            if (queryMethods[name]) toReturn = queryMethods[name](object, refrence, 'get', undefined, name);
-            else if (nodes.length === 1) toReturn = object.nodes[0][(refrence ? '$' : '') + name];
+            if (queryMethods[name]) {
+                if (queryMethods[name] === true) {
+                    toReturn = function () {
+                        var returnValue = object.nodes.map((node) => {
+                            return node[(refrence ? '$' : '') + name].apply(node, arguments);
+                        });
+                        return chain ? proxyout : returnValue;
+                    }
+                } else {
+                    toReturn = queryMethods[name](object, refrence, 'get', undefined, name);
+                }
+
+            } else if (object.nodes.length === 1) toReturn = object.nodes[0][(refrence ? '$' : '') + name];
+            else {
+                toReturn = object.nodes.map((node) => {
+                    return node[(refrence ? '$' : '') + name];
+                })
+            }
             return chain ? proxyout : toReturn;
         },
         set: function (target, name, value) {
@@ -52,6 +68,13 @@ function Query(nodes, selector) {
             }
             var toReturn = undefined;
             if (queryMethods[name]) toReturn = queryMethods[name](object, refrence, 'set', value, name);
+            else if (object.nodes.length === 1) {
+                toReturn = object.nodes[0][(refrence ? '$' : '') + name] = value;
+            } else {
+                toReturn = object.nodes.map((node) => {
+                    return node[(refrence ? '$' : '') + name] = value;
+                })
+            }
             return chain ? proxyout : toReturn;
         },
         deleteProperty: function (target, name) {
@@ -62,6 +85,13 @@ function Query(nodes, selector) {
             }
             var toReturn = undefined;
             if (queryMethods[name]) toReturn = queryMethods[name](object, refrence, 'delete', undefined, name);
+            else if (object.nodes.length === 1) {
+                toReturn = delete object.nodes[0][(refrence ? '$' : '') + name];
+            } else {
+                toReturn = object.nodes.map((node) => {
+                    return delete node[(refrence ? '$' : '') + name];
+                })
+            }
             return chain ? proxyout : toReturn;
         }
     })
