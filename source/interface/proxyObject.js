@@ -104,8 +104,14 @@ function proxy(parent, current, name) {
                 } else {
                     if (bindings[name]) {
                         if (bindings[name].owner === current) {
-                            bindings[name].attached.forEach((att) => {
-                                att.bindings[name] = null;
+                            bindings[name].attached.forEach((obj) => {
+                                for (var name2 in obj.bindings) {
+                                    if (obj.bindings[name2] === bindings[name]) {
+                                        obj.bindings[name2] = null;
+                                        if (data.name === 'style') obj.current[name2] = '';
+                                        else delete obj.current[name2];
+                                    }
+                                }
                             })
                             bindings[name].attached = null;
                         } else {
@@ -114,15 +120,21 @@ function proxy(parent, current, name) {
                             bindings[name].attached.pop();
                         }
                         bindings[name] = null;
+                        if (data.name === 'style') current[name] = '';
+                        else delete current[name];
                         toReturn = true;
-                    } else toReturn = false;
+                    } else if (data.name === 'style') current[name] = '', toReturn = true;
+                    else toReturn = delete current[name];
                 }
             } else if (iselement && elementMethods[name]) {
                 toReturn = elementMethods[name](data, false, 'delete', undefined, name)
+            } else {
+                if (data.name === 'style') current[name] = '', toReturn = true;
+                else toReturn = delete current[name];
             }
             return chain ? proxyOut : toReturn
         }
-    })
+    });
     data.proxy = proxyOut;
     return proxyOut;
 }

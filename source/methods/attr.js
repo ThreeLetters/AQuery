@@ -16,5 +16,3 @@
      })
 
  }
-
- queryMethods.attr = true

@@ -41,31 +41,33 @@ function Query(nodes, selector) {
                 toReturn = refrence ? object.nodes[name].elementData.current : object.nodes[name];
             } else
             if (queryMethods[name]) {
-                if (queryMethods[name] === true) {
-                    toReturn = function () {
-                        var returnValue = object.nodes.map((node) => {
-                            return node[(refrence ? '$' : '') + name].apply(node, arguments);
-                        });
-                        return chain ? proxyout : returnValue;
-                    }
-                } else {
-                    toReturn = queryMethods[name](object, refrence, 'get', undefined, name);
-                }
-
+                toReturn = queryMethods[name](object, refrence, 'get', undefined, name);
             } else if (object.nodes.length === 1) toReturn = object.nodes[0][(refrence ? '$' : '') + name];
             else {
 
-                function proxyList(array, func) {
+                function proxyList(array, parent, parname, func) {
                     return new Proxy(func || array, {
                         get: function (target, name) {
                             if (!isNaN(name)) {
                                 return array[name];
                             } else if (name === 'length') {
                                 return array.length;
+                            } else if (name === 'listData') {
+                                return array;
+                            } else if (name === 'link') {
+                                return function () {
+                                    var initial = false;
+                                    parname = parname.charAt(0) === '$' ? parname.substr(1) : parname;
+                                    parent.forEach((node) => {
+                                        if (!initial) initial = node['$' + parname];
+                                        else node[parname] = initial;
+                                    })
+                                    return initial;
+                                }
                             } else {
                                 return proxyList(array.map((node) => {
                                     return node[name];
-                                }), function () {
+                                }), array, name, function () {
                                     return array.map((node) => {
                                         return node[name].apply(node, arguments)
                                     });
@@ -73,22 +75,34 @@ function Query(nodes, selector) {
                             }
                         },
                         set: function (target, name, value) {
+                            if (value.listData) {
+                                var data = value.listData;
+                                if (data.length === array.length) {
+                                    return proxyList(array.map((node, i) => {
+                                        return node[name] = datA[i];
+                                    }), array, name)
+                                } else {
+                                    return proxyList(array.map((node, i) => {
+                                        return node[name] = data[0];
+                                    }), array, name)
+                                }
+                            }
                             return proxyList(array.map((node) => {
                                 return node[name] = value;
-                            }))
+                            }), array, name)
                         },
-                        delete: function (target, name, value) {
+                        deleteProperty: function (target, name, value) {
                             return proxyList(array.map((node) => {
                                 return delete node[name];
-                            }))
+                            }), array, name);
                         }
                     })
                 }
                 toReturn = proxyList(object.nodes.map((node) => {
                     return node[(refrence ? '$' : '') + name];
-                }), function () {
+                }), object.nodes, (refrence ? '$' : '') + name, function () {
                     return object.nodes.map((node) => {
-                        return node[name].apply(node, arguments);
+                        return node[(refrence ? '$' : '') + name].apply(node, arguments);
                     });
                 });
             }

@@ -42,7 +42,7 @@ function setProperty(element, property, value) {
     }
 
 
-    return element.style[property] = value;
+    return element.style[property] = value.toString();
 }
 
 function setPropertyRefrence(queryData, property, value) {
