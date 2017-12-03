@@ -1,8 +1,12 @@
+var config = {
+    objectEdit: true
+
+}
+
 var elementMethods = {},
     queryMethods = {},
     AQueryMethods = {},
-    selectCache = {},
-    elementCache = {},
+    elementCache = config.objectEdit ? {} : new Map(),
     refrenceListeners = [],
     nodeId = 0,
     AQuery,
