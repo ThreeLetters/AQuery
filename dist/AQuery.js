@@ -1548,7 +1548,7 @@ function Query(nodes, selector) {
                                 var data = value.listData;
                                 if (data.length === array.length) {
                                     return proxyList(array.map((node, i) => {
-                                        return node[name] = datA[i];
+                                        return node[name] = data[i];
                                     }), array, name)
                                 } else {
                                     return proxyList(array.map((node, i) => {
