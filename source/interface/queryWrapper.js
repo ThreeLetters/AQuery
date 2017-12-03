@@ -55,8 +55,8 @@ function Query(nodes, selector) {
             } else if (object.nodes.length === 1) toReturn = object.nodes[0][(refrence ? '$' : '') + name];
             else {
 
-                function proxyList(array) {
-                    return new Proxy(array, {
+                function proxyList(array, func) {
+                    return new Proxy(func || array, {
                         get: function (target, name) {
                             if (!isNaN(name)) {
                                 return array[name];
@@ -65,7 +65,11 @@ function Query(nodes, selector) {
                             } else {
                                 return proxyList(array.map((node) => {
                                     return node[name];
-                                }))
+                                }), function () {
+                                    return array.map((node) => {
+                                        return node[name].apply(node, arguments)
+                                    });
+                                })
                             }
                         },
                         set: function (target, name, value) {
@@ -82,7 +86,11 @@ function Query(nodes, selector) {
                 }
                 toReturn = proxyList(object.nodes.map((node) => {
                     return node[(refrence ? '$' : '') + name];
-                }));
+                }), function () {
+                    return object.nodes.map((node) => {
+                        return node[name].apply(node, arguments);
+                    });
+                });
             }
             return chain ? proxyout : toReturn;
         },
