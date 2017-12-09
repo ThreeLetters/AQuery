@@ -1258,6 +1258,7 @@ for (var to in shortcuts) {
  Build: v0.0.1
  Built on: 09/12/2017
 */
+
 // init.js
 var Easings = {},
     Queues = {
@@ -2156,7 +2157,7 @@ function animate(element, properties, options) {
         }
     };
 
-    if (!options.queue) item.options.start();
+    if (!options.queue) options.start();
     Queues[options.queue ? 'main' : 'parrallel'].list.splice(0, 0, Data);
     Stop = false;
     run();
@@ -2180,14 +2181,12 @@ function end(item, queueName) {
     }
     var queue = Queues[queueName]
     if (queue.parrallel) {
-        var ind = Queue.list.indexOf(item);
-        Queue.list.splice(ind, 1);
+        var ind = queue.list.indexOf(item);
+        queue.list.splice(ind, 1);
     } else {
         queue.active = false;
     }
-
     item.options.done();
-
 }
 
 
@@ -2221,8 +2220,8 @@ function run() {
                     Queues[name].active = Queues[name].list.pop();
                     Queues[name].active.options.start();
                     if (!Queues[name].active.init()) {
+                        Queues[name].active.done();
                         Queues[name].active = false;
-                        Queues[name].done();
                     };
                     stop = false;
                 }
@@ -2281,21 +2280,31 @@ window.D = function D(element, properties, options, options2, callback) {
                 options.done = function () {};
             }
 
-            return properties.map((p, i) => {
+            var i = 0;
 
+            function loop() {
+                var p = properties[i];
+                if (!p) return;
+                var newoptions = convertOptions(options);
                 if (start && i === 0) {
-                    var newoptions = convertOptions(options);
                     newoptions.start = start;
-                    return animate(element, p, newoptions);
-                } else if (done && i === properties.length - 1) {
-                    var newoptions = convertOptions(options);
-                    newoptions.done = done;
-                    return animate(element, p, newoptions);
-                } else {
-                    return animate(element, p, options);
                 }
-            });
+                newoptions.done = function () {
+                    i++;
+                    if (i === properties.length) {
+                        done();
+                        return;
+                    }
+                    loop();
+                }
+
+                animate(element, p, newoptions);
+
+            }
+
+            loop();
         } else {
+
             return animate(element, properties, options);
         }
     }
@@ -2342,7 +2351,8 @@ elementMethods.fadeIn = function (elementData) {
     return function (duration, complete, ending) {
         var options = {
             duration: duration,
-            done: complete
+            done: complete,
+            queue: false
         }
         elementData.current.D({
             opacity: 1,
@@ -2356,10 +2366,11 @@ elementMethods.fadeOut = function (elementData) {
 
         var options = {
             duration: duration,
-            done: complete
+            done: complete,
+            queue: false
         }
         elementData.current.D([{
-            opacity: 0,
+            opacity: 0
         }, {
             display: 'none'
         }], options);

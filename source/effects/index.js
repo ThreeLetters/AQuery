@@ -2,7 +2,8 @@ elementMethods.fadeIn = function (elementData) {
     return function (duration, complete, ending) {
         var options = {
             duration: duration,
-            done: complete
+            done: complete,
+            queue: false
         }
         elementData.current.D({
             opacity: 1,
@@ -16,10 +17,11 @@ elementMethods.fadeOut = function (elementData) {
 
         var options = {
             duration: duration,
-            done: complete
+            done: complete,
+            queue: false
         }
         elementData.current.D([{
-            opacity: 0,
+            opacity: 0
         }, {
             display: 'none'
         }], options);
