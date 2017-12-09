@@ -3,6 +3,7 @@ var files = [
     'css/index.js',
     'css/*.js',
     'methods/*.js',
+    'effects/*.js',
     'interface/proxyObject.js',
     'interface/elementWrapper.js',
     'interface/queryWrapper.js',
