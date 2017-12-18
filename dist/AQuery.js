@@ -5,7 +5,7 @@
  License: MIT (https://github.com/ThreeLetters/AQuery/blob/master/LICENSE)
  Source: https://github.com/ThreeLetters/AQuery
  Build: v0.0.1
- Built on: 10/12/2017
+ Built on: 18/12/2017
 */
 
 (function (window) {
@@ -1256,7 +1256,7 @@ for (var to in shortcuts) {
  License: MIT (https://github.com/ThreeLetters/differential.js/blob/master/LICENSE)
  Source: https://github.com/ThreeLetters/differential.js
  Build: v0.0.1
- Built on: 10/12/2017
+ Built on: 12/12/2017
 */
 
 window.D = (function (window) {
@@ -2442,10 +2442,6 @@ window.D = (function (window) {
     }
     D.start = function () {
         startLoop();
-    }
-
-    D.fps = function (value) {
-        if (value) frameDur
     }
 
     D.clear = function () {
