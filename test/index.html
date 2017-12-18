@@ -7,26 +7,59 @@
 </head>
 
 <body>
-    <div class='clickclass' id='test'>
+    <div class='animateclass'>
 
     </div>
-    <div class='clickclass' id='something'>
+
+    <div class='animateclass'>
 
     </div>
+
 
     <script>
-        var el = $('#test')
-        el.style.backgroundColor = 'blue';
-
-        $('#something').style.backgroundColor = 'green';
-
-
-        $('.clickclass').$css({
+        $('.animateclass').css({
             width: '100px',
             height: '100px'
         });
 
-        $('.clickclass').fadeOut();
+        function an() {
+
+            $('.animateclass').animate([{
+                    backgroundColor: 'red',
+                    border: '20px solid rgb(255,255,0)',
+                    width: '-=30px',
+                    height: '-=30px'
+                },
+                {
+                    backgroundColor: 'green',
+                    border: '5px solid rgb(255,0,0)',
+                    width: '+=30px',
+                    height: '+=30px'
+                },
+                {
+                    backgroundColor: 'blue',
+                    borderColor: 'rgb(0,255,0)'
+                },
+                {
+                    backgroundColor: 'rgb(255,0,255)',
+                    border: '20px solid blue'
+                },
+                {
+                    backgroundColor: 'rgb(0,255,255)',
+                    border: '5px solid rgb(255,0,255)'
+                },
+                {
+                    backgroundColor: 'rgb(255,255,0)',
+                    borderColor: 'rgb(255,0,255)',
+                }
+            ], {
+                duration: 1000,
+                easing: 'swing',
+                done: an,
+                queue: false
+            });
+        }
+        an();
 
     </script>
 </body>

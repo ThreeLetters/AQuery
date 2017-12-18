@@ -1256,7 +1256,7 @@ for (var to in shortcuts) {
  License: MIT (https://github.com/ThreeLetters/differential.js/blob/master/LICENSE)
  Source: https://github.com/ThreeLetters/differential.js
  Build: v0.0.1
- Built on: 12/12/2017
+ Built on: 18/12/2017
 */
 
 window.D = (function (window) {
@@ -1993,7 +1993,7 @@ window.D = (function (window) {
 
     function setUnitsCSS(element, css1, css2) {
         for (var i = 0; i < css2.length; ++i) {
-            if (!css1[i]) {
+            if (!css1[i] || css1[i][0] !== css2[i][0]) {
                 css1[i] = css2[i].slice(0);
                 css1[i].push(false)
                 continue;
@@ -2007,7 +2007,6 @@ window.D = (function (window) {
                                 css2[i][2] = css1[i][2];
                                 css2[i][1] = css1[i][1] * (css2[i][1] / 100);
                             } else {
-
                                 css1[i][1] = convertUnits(element, css1[i][1], css1[i][2], css2[i][2])
                                 css1[i][2] = css2[i][2];
                             }
@@ -2122,6 +2121,7 @@ window.D = (function (window) {
                 level--;
                 if (level < 0) throw 'Fail';
             } else if (level === 0 && char === ',') {
+                current.pop();
                 out.push(current.join(''))
                 current = [];
             }
@@ -2157,7 +2157,7 @@ window.D = (function (window) {
                         })]);
                     } else {
                         var args = splitSafe(func[2]).map((arg) => {
-                            return parseCSS(arg);
+                            return parseCSS(arg.trim());
                         });
                         obj.push([1, func[1], args]);
                     }
@@ -2229,7 +2229,7 @@ window.D = (function (window) {
                             operateCSS(this.originalValue, this.toValue, operator);
                         }
                         setDiffCSS(this.originalValue, this.toValue);
-                        //  console.log(this.originalValue, this.toValue)
+                        //console.log(this.originalValue, this.toValue)
                         return true;
                     }
                 }
@@ -2493,6 +2493,11 @@ elementMethods.fadeOut = function (elementData) {
         }, {
             display: 'none'
         }], options);
+    }
+}
+elementMethods.animate = function (elementData) {
+    return function (a, b, c, d, e, f, g) {
+        return elementData.current.D(a, b, c, d, e, f, g);
     }
 }
 // effects/visibility.js

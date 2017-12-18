@@ -27,3 +27,8 @@ elementMethods.fadeOut = function (elementData) {
         }], options);
     }
 }
+elementMethods.animate = function (elementData) {
+    return function (a, b, c, d, e, f, g) {
+        return elementData.current.D(a, b, c, d, e, f, g);
+    }
+}
