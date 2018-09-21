@@ -7,7 +7,8 @@
         "test": "test"
     },
     "dependencies": {
-        "babel-core": "latest"
+        "@babel/core": "latest",
+        "@babel/preset-env": "latest"
     },
     "scripts": {
         "build": "node build.js"
@@ -21,5 +22,10 @@
     "bugs": {
         "url": "https://github.com/ThreeLetters/AQuery/issues"
     },
-    "homepage": "https://github.com/ThreeLetters/AQuery#readme"
+    "homepage": "https://github.com/ThreeLetters/AQuery#readme",
+    "devDependencies": {
+        "@babel/core": "^7.1.0",
+        "@babel/preset-env": "^7.1.0",
+        "babel-preset-env": "^1.7.0"
+    }
 }

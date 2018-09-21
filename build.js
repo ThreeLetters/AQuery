@@ -181,8 +181,8 @@ files = Glob(files.map((f) => {
 
 var out = '(function (window) {\n' + files.join('') + '})(window)';
 console.log("Compiling...")
-out = require("babel-core").transform(out, {
-
+out = require("@babel/core").transform(out, {
+    "presets": ["@babel/preset-env"]
 }).code;
 
 
