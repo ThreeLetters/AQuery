@@ -37,8 +37,8 @@ $("#parent").style.width = "100px"
 // Recalculate since it changed
 $("#something").style.width = $("#parent").style.width * 2/3;
 
-// OR, special syntax using refrences/bindings:
-$("#something").style.$width = $("#parent").style.$width * 2/3;
+// OR, special syntax using refrences/bindings. Note the unit. Unit conversions are automatically done.
+$("#something").style.$width = $("#parent").style.$width * 2/3 + "px";
 
 // Change the parent's size
 $("#parent").style.width = "100px"
@@ -46,6 +46,7 @@ $("#parent").style.width = "100px"
 // Dont have to do anything. The #something element's width will automatically re-calculate
 
 // NOTE: This works with all coefficients between -10 and 10 inclusive for up to 3 unknowns. In addition, you can add an "offset" d
+// The coefficients can also be fractions: a/b, where A and B are between -10 and 10 inclusive
 // result = ax + by + cz + d
 // where -10 <= a,b,c <= 10
 ```
