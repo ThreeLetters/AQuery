@@ -2734,15 +2734,17 @@
 
                         if (!bindings[name]) {
                             var unit = "";
+                            var number = 0;
                             if (typeof current[name] === "string") {
                                 var match = current[name].match(/^(\-?[0-9\.]*)(em|ex|%|px|cm|mm|in|pt|pc|ch|rem|vh|vw|vmin|vmax|s|ms|deg|grad|rad|turn|Q)?$/);
                                 if (match[1]) {
-                                    number = parseInt(match[1]);
+                                    number = parseFloat(match[1]);
                                     unit = match[2];
                                 }
-                            }
+                            } else number = parseFloat(current[name]);
 
                             bindings[name] = createBinding(true, name, unit);
+                            bindings[name].value = number;
                         }
                         toReturn = magicNumbers.getMagicNumber(bindings[name]);
                     }
@@ -2767,11 +2769,22 @@
                     toReturn = elementMethods[name](data, true, 'set', value, name);
                 } else {
                     if (refrence && value) {
-                        var match = value.toString().match(/^(\-?[0-9\.]*)(em|ex|%|px|cm|mm|in|pt|pc|ch|rem|vh|vw|vmin|vmax|s|ms|deg|grad|rad|turn|Q)?$/);
-                        var number = parseInt(match[1]);
-                        var unit = match[2];
+                        var number, unit;
+                        if (typeof value == "string") {
+                            var match = value.toString().match(/^(\-?[0-9\.]*)(em|ex|%|px|cm|mm|in|pt|pc|ch|rem|vh|vw|vmin|vmax|s|ms|deg|grad|rad|turn|Q)?$/);
+                            number = parseInt(match[1]);
+                            unit = match[2];
+                        } else if (typeof value == "number") {
+                            number = value;
+                        } else {
+                            throw "ERROR: Refrences must point to another one";
+                        }
                         var objects = magicNumbers.numberToObjects(number);
 
+                        if (!unit) {
+                            unit = objects.objects[0][0].unit;
+                            console.log("WARNING: Unit was not defined for property " + name + ". Unit was assumed to be " + unit);
+                        }
                         if (!bindings[name]) {
                             bindings[name] = createBinding(false, name, unit);
                         }

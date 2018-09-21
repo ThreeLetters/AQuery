@@ -7,20 +7,30 @@
 </head>
 
 <body>
-    <div class='animateclass'>
+    <div id="container">
+        <div id="larger">
 
+        </div>
+        <div id="smaller">
+
+        </div>
     </div>
 
-    <div class='animateclass'>
 
-    </div>
 
 
     <script>
-        $(".animateclass").style.backgroundColor = "rgba(0,0,0,.1)";
-        $(".animateclass")[0].style.$width = $(".animateclass")[0].style.$height * 2 + "px"
+        $("#container").style.border = "1px solid rgba(255,0,0,.5)";
 
-        $(".animateclass").style.height = "10px"
+        $("#larger").style.border = "1px solid rgba(0,255,0,.5)"
+        $("#smaller").style.border = "1px solid rgba(0,0,255,.5)"
+
+        $("#larger").style.width = $("#larger").style.height = "100px"
+        $("#smaller").style.width = $("#smaller").style.height = "100px"
+
+        $("#larger,#smaller").style.display = "inline-block"
+        $("#container").style.width = "500px"
+        $("#container").style.height = "300px"
     </script>
 </body>
 

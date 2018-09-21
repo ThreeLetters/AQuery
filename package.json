@@ -1,0 +1,25 @@
+{
+    "name": "aquery",
+    "version": "1.0.0",
+    "description": "Aquery builder",
+    "main": "build.js",
+    "directories": {
+        "test": "test"
+    },
+    "dependencies": {
+        "babel-core": "latest"
+    },
+    "scripts": {
+        "build": "node build.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ThreeLetters/AQuery.git"
+    },
+    "author": "Andrews54757",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/ThreeLetters/AQuery/issues"
+    },
+    "homepage": "https://github.com/ThreeLetters/AQuery#readme"
+}
