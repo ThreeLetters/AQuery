@@ -23,14 +23,32 @@ for (var i = 0; i < elements.length; i++) {
 
 ```
 
+## Bindings/Refrences
 
-## Features:
-* Allows for easy modification of the HTML DOM
-* Group things togethor and do things togethor
-* Includes the animation library Differential.JS - A very smooth and awesome tool
-* Ajax queries like JQuery
-* Refrences/Binding - Specify something once, and it will take effect
-* Infinitly expandable API - Plugins are easy to add
+Bindings and refrences makes your life easier. If you want to have a property of one object depend on another, use this to make sure you only do it once. It can even do calculated values!
+
+```
+// Normal syntax, set the width of one element to 2/3 the parent element
+$("#something").style.width = $("#parent").style.width * 2/3;
+
+// Change the parent's size
+$("#parent").style.width = "100px"
+
+// Recalculate since it changed
+$("#something").style.width = $("#parent").style.width * 2/3;
+
+// OR, special syntax using refrences/bindings:
+$("#something").style.$width = $("#parent").style.$width * 2/3;
+
+// Change the parent's size
+$("#parent").style.width = "100px"
+
+// Dont have to do anything. The #something element's width will automatically re-calculate
+
+// NOTE: This works with all coefficients between -10 and 10 inclusive for up to 3 unknowns. In addition, you can add an "offset" d
+// result = ax + by + cz + d
+// where -10 <= a,b,c <= 10
+```
 
 ## Usage
 
