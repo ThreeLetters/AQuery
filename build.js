@@ -4,6 +4,7 @@ var files = [
     'css/*.js',
     'methods/*.js',
     'effects/*.js',
+    'interface/magicNumbers.js',
     'interface/proxyObject.js',
     'interface/elementWrapper.js',
     'interface/queryWrapper.js',
@@ -179,6 +180,11 @@ files = Glob(files.map((f) => {
 });
 
 var out = '(function (window) {\n' + files.join('') + '})(window)';
+console.log("Compiling...")
+out = require("babel-core").transform(out, {
+
+}).code;
+
 
 var version = "0.0.1";
 var today = new Date();
@@ -208,7 +214,7 @@ var top = `\
 
 fs.writeFileSync(__dirname + '/dist/AQuery.js', top + out)
 
-
+console.log("Minifying...")
 compile(out, function (compiled) {
     fs.writeFileSync(__dirname + '/dist/AQuery.min.js', top + compiled)
     console.log("Compiled " + files.length + " files")

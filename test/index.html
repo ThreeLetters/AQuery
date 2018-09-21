@@ -17,50 +17,10 @@
 
 
     <script>
-        $('.animateclass').css({
-            width: '100px',
-            height: '100px'
-        });
+        $(".animateclass").style.backgroundColor = "rgba(0,0,0,.1)";
+        $(".animateclass")[0].style.$width = $(".animateclass")[0].style.$height * 2 + "px"
 
-        function an() {
-
-            $('.animateclass').animate([{
-                    backgroundColor: 'red',
-                    border: '20px solid rgb(255,255,0)',
-                    width: '-=30px',
-                    height: '-=30px'
-                },
-                {
-                    backgroundColor: 'green',
-                    border: '5px solid rgb(255,0,0)',
-                    width: '+=30px',
-                    height: '+=30px'
-                },
-                {
-                    backgroundColor: 'blue',
-                    borderColor: 'rgb(0,255,0)'
-                },
-                {
-                    backgroundColor: 'rgb(255,0,255)',
-                    border: '20px solid blue'
-                },
-                {
-                    backgroundColor: 'rgb(0,255,255)',
-                    border: '5px solid rgb(255,0,255)'
-                },
-                {
-                    backgroundColor: 'rgb(255,255,0)',
-                    borderColor: 'rgb(255,0,255)',
-                }
-            ], {
-                duration: 1000,
-                easing: 'swing',
-                done: an,
-                queue: false
-            });
-        }
-        an();
-
+        $(".animateclass").style.height = "10px"
     </script>
 </body>
 
