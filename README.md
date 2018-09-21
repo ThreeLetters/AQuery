@@ -27,7 +27,7 @@ for (var i = 0; i < elements.length; i++) {
 
 Bindings and refrences makes your life easier. If you want to have a property of one object depend on another, use this to make sure you only do it once. It can even do calculated values!
 
-```
+```js
 // Normal syntax, set the width of one element to 2/3 the parent element
 $("#something").style.width = $("#parent").style.width * 2/3;
 
