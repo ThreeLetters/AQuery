@@ -71,6 +71,9 @@ function proxy(parent, current, name) {
     var proxyOut = new Proxy(current, {
         get: function (target, name) {
             var toReturn = undefined;
+            if (name === "element") {
+                return data.current;
+            } else
             if (name === 'elementData') {
                 return data;
             } else if (name === 'chain') {

@@ -1259,7 +1259,7 @@
      Built on: 05/07/2018
     */
 
-    window.D = function (window) {
+    var D = function (window) {
         // init.js
         var Easings = {},
             Queues = {
@@ -1889,7 +1889,7 @@
         function getProperty(element, propData) {
             if (CSSGetHooks[propData.nameJS]) return CSSGetHooks[propData.nameJS](element, propData);
             if (element.style[propData.nameJS]) return element.style[propData.nameJS];
-            var styles = window.getComputedStyle(element);
+            var styles = window.getComputedStyle(element.element);
             return styles.getPropertyValue(propData.nameCSS);
         }
 
@@ -2461,7 +2461,7 @@
                 done: complete,
                 queue: false
             };
-            elementData.current.D({
+            D(elementData.proxy, {
                 opacity: 1,
                 display: ending || 'block'
             }, options);
@@ -2476,16 +2476,16 @@
                 done: complete,
                 queue: false
             };
-            elementData.current.D([{
+            D(elementData.proxy, [{
                 opacity: 0
             }, {
                 display: 'none'
             }], options);
         };
     };
-    elementMethods.animate = function (elementData) {
-        return function (a, b, c, d, e, f, g) {
-            return elementData.current.D(a, b, c, d, e, f, g);
+    elementMethods.D = elementMethods.animate = function (elementData) {
+        return function (properties, options, options2, callback) {
+            return D(elementData.proxy, properties, options, options2, callback);
         };
     };
     // effects/visibility.js
@@ -2712,7 +2712,9 @@
         var proxyOut = new Proxy(current, {
             get: function (target, name) {
                 var toReturn = undefined;
-                if (name === 'elementData') {
+                if (name === "element") {
+                    return data.current;
+                } else if (name === 'elementData') {
                     return data;
                 } else if (name === 'chain') {
                     chainResults = [];

@@ -5,7 +5,7 @@ elementMethods.fadeIn = function (elementData) {
             done: complete,
             queue: false
         }
-        elementData.current.D({
+        D(elementData.proxy, {
             opacity: 1,
             display: ending || 'block'
         }, options);
@@ -20,15 +20,15 @@ elementMethods.fadeOut = function (elementData) {
             done: complete,
             queue: false
         }
-        elementData.current.D([{
+        D(elementData.proxy, [{
             opacity: 0
         }, {
             display: 'none'
         }], options);
     }
 }
-elementMethods.animate = function (elementData) {
-    return function (a, b, c, d, e, f, g) {
-        return elementData.current.D(a, b, c, d, e, f, g);
+elementMethods.D = elementMethods.animate = function (elementData) {
+    return function (properties, options, options2, callback) {
+        return D(elementData.proxy, properties, options, options2, callback)
     }
 }

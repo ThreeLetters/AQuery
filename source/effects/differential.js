@@ -8,7 +8,7 @@
  Built on: 05/07/2018
 */
 
-window.D = (function (window) {
+var D = (function (window) {
     // init.js
     var Easings = {},
         Queues = {
@@ -652,7 +652,7 @@ window.D = (function (window) {
     function getProperty(element, propData) {
         if (CSSGetHooks[propData.nameJS]) return CSSGetHooks[propData.nameJS](element, propData)
         if (element.style[propData.nameJS]) return element.style[propData.nameJS];
-        var styles = window.getComputedStyle(element);
+        var styles = window.getComputedStyle(element.element);
         return styles.getPropertyValue(propData.nameCSS);
     }
 
