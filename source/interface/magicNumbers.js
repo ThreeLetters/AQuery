@@ -55,6 +55,9 @@ class MagicNumbers {
         if (index !== -1) {
             return this.numberPool[index];
         }
+        if (this.currentNumber >= 3) {
+            this.currentNumber = 0;
+        }
         this.assigned[this.currentNumber] = obj;
         return this.numberPool[this.currentNumber++];
     }
